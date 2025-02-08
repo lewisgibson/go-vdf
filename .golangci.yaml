@@ -1,0 +1,34 @@
+version: '2'
+run:
+    allow-parallel-runners: true
+
+linters:
+    enable:
+        - testifylint
+        - usestdlibvars
+        - copyloopvar
+        - errorlint
+        - gosec
+        - misspell
+
+    disable:
+        - errcheck
+
+    exclusions:
+        rules:
+            - path: '(.+)_test\.go$'
+              linters:
+                  - gosec
+
+    settings:
+        staticcheck:
+            checks:
+                - all
+                - '-S1011'
+                - '-ST1000'
+                - '-ST1003'
+                - '-SA1012'
+
+        gosec:
+            excludes:
+                - 'G104'

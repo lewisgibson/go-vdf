@@ -1,0 +1,30 @@
+{
+    "go.lintTool": "golangci-lint-v2",
+    "go.lintFlags": ["--path-mode=abs"],
+    "go.lintOnSave": "workspace",
+
+    "go.formatTool": "custom",
+    "go.formatFlags": ["fmt", "--stdin"],
+    "go.alternateTools": {
+        "customFormatter": "golangci-lint-v2"
+    },
+
+    // Golangci-lint performs govet checks for us.
+    "gopls": {
+        "staticcheck": false,
+        "analyses": {
+            "unusedparams": false,
+            "unusedwrite": false,
+            "unusedvariable": false,
+            "unusedfunc": false,
+            "unreachable": false,
+            "fieldalignment": false,
+            "shadow": false,
+            "nilness": false
+        }
+    },
+
+    "files.readonlyInclude": {
+        "vendor/**": true
+    }
+}

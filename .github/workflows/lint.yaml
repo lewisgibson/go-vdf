@@ -1,0 +1,33 @@
+name: lint
+
+on:
+    workflow_dispatch: {}
+
+    push:
+        branches:
+            - main
+
+    pull_request:
+        branches:
+            - main
+
+permissions:
+    contents: read
+    pull-requests: read
+
+jobs:
+    go:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4.2.2
+
+            - name: Setup Go
+              uses: actions/setup-go@v5.5.0
+              with:
+                  go-version-file: ./go.mod
+
+            - name: Lint
+              uses: golangci/golangci-lint-action@v8
+              with:
+                  version: v2.3.0
