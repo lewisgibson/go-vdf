@@ -172,14 +172,18 @@ func (d *Decoder) processRune(r rune, stack *[]*Node, currentKey *string, headCo
 			current.Children = make(map[string]*Node)
 		}
 
-		var newNode = &Node{
-			Type:        NodeTypeMap,
-			Column:      d.column - 1, // Position of the '{' character
-			Line:        d.line,
-			HeadComment: strings.TrimSpace(*headComment),
+		// Reuse existing map node to merge children from duplicate keys
+		var newNode, ok = current.Children[*currentKey]
+		if !ok || newNode.Type != NodeTypeMap {
+			newNode = &Node{
+				Type:        NodeTypeMap,
+				Column:      d.column - 1, // Position of the '{' character
+				Line:        d.line,
+				HeadComment: strings.TrimSpace(*headComment),
+			}
+			current.Children[*currentKey] = newNode
 		}
 
-		current.Children[*currentKey] = newNode
 		*stack = append(*stack, newNode)
 		*currentKey = ""
 		*headComment = ""

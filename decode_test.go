@@ -295,6 +295,63 @@ func TestDecode_Node(t *testing.T) {
 				Column: 1,
 			},
 		},
+		"duplicate map keys": {
+			input: `"root" { "items" { "1" { "name" "first" } } "items" { "2" { "name" "second" } } }`,
+			expectedNode: govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"root": {
+						Type: govdf.NodeTypeMap,
+						Children: map[string]*govdf.Node{
+							"items": {
+								Type: govdf.NodeTypeMap,
+								Children: map[string]*govdf.Node{
+									"1": {
+										Type: govdf.NodeTypeMap,
+										Children: map[string]*govdf.Node{
+											"name": {
+												Type:  govdf.NodeTypeScalar,
+												Value: "first",
+
+												Line:   1,
+												Column: 32,
+											},
+										},
+
+										Line:   1,
+										Column: 24,
+									},
+									"2": {
+										Type: govdf.NodeTypeMap,
+										Children: map[string]*govdf.Node{
+											"name": {
+												Type:  govdf.NodeTypeScalar,
+												Value: "second",
+
+												Line:   1,
+												Column: 67,
+											},
+										},
+
+										Line:   1,
+										Column: 59,
+									},
+								},
+
+								Line:   1,
+								Column: 18,
+							},
+						},
+
+						Line:   1,
+						Column: 8,
+					},
+				},
+
+				Line:   1,
+				Column: 1,
+			},
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {

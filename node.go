@@ -115,6 +115,13 @@ func convertMapToNodes(m map[string]any) map[string]*Node {
 // This is a helper function used during JSON unmarshaling to convert
 // JSON values (objects, strings, primitives) into appropriate VDF nodes.
 func convertValueToNode(v any) *Node {
+	if v == nil {
+		// Handle JSON null as an empty map node
+		return &Node{
+			Type: NodeTypeMap,
+		}
+	}
+
 	switch val := v.(type) {
 	case map[string]any:
 		return &Node{
