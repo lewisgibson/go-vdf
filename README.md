@@ -1,30 +1,32 @@
 # go-vdf
 
 [![Build Workflow](https://github.com/lewisgibson/go-vdf/actions/workflows/build.yaml/badge.svg)](https://github.com/lewisgibson/go-vdf/actions/workflows/build.yaml)
+[![codecov](https://codecov.io/gh/lewisgibson/go-vdf/graph/badge.svg?token=dgmOUQIoI0)](https://codecov.io/gh/lewisgibson/go-vdf)
 [![Pkg Go Dev](https://pkg.go.dev/badge/github.com/lewisgibson/go-vdf)](https://pkg.go.dev/github.com/lewisgibson/go-vdf)
 
 A high-performance parser and encoder for the [VDF (Valve Data Format)](https://developer.valvesoftware.com/wiki/KeyValues) in Go. VDF is commonly used in Valve games like Counter-Strike, Dota 2, and Team Fortress 2 for configuration files, item definitions, and game data.
 
 ## Features
 
--   ✅ **Complete VDF Support**: Parse and encode VDF files with full feature support
--   ✅ **Struct Mapping**: Direct unmarshaling to Go structs with `vdf` tags
--   ✅ **Node Tree API**: Work with VDF data as a tree of nodes
--   ✅ **Comment Preservation**: Maintains head and line comments during parsing
--   ✅ **Position Tracking**: Line and column information for error reporting
--   ✅ **Custom Marshalers**: Implement `MarshalVDF` and `UnmarshalVDF` interfaces
--   ✅ **JSON Compatibility**: Nodes can be marshaled/unmarshaled to/from JSON
--   ✅ **High Performance**: Optimized with efficient parsing and minimal allocations
--   ✅ **Concurrent Safe**: Thread-safe operations with proper synchronization
--   ✅ **Escaped Quote Support**: Properly handles escaped quotes in string values
--   ✅ **Robust Error Handling**: Detailed error messages with line/column information
--   ✅ **Clean Architecture**: Well-structured, maintainable code with comprehensive tests
+- ✅ **Complete VDF Support**: Parse and encode VDF files with full feature support
+- ✅ **Binary VDF Support**: Parse and encode binary VDF (Valve's binary KeyValues format)
+- ✅ **Struct Mapping**: Direct unmarshaling to Go structs with `vdf` tags
+- ✅ **Node Tree API**: Work with VDF data as a tree of nodes
+- ✅ **Comment Preservation**: Maintains head and line comments during parsing
+- ✅ **Position Tracking**: Line and column information for error reporting
+- ✅ **Custom Marshalers**: Implement `MarshalVDF` and `UnmarshalVDF` interfaces
+- ✅ **JSON Compatibility**: Nodes can be marshaled/unmarshaled to/from JSON
+- ✅ **High Performance**: Optimized with efficient parsing and minimal allocations
+- ✅ **Concurrent Safe**: Thread-safe operations with proper synchronization
+- ✅ **Escaped Quote Support**: Properly handles escaped quotes in string values
+- ✅ **Robust Error Handling**: Detailed error messages with line/column information
+- ✅ **Clean Architecture**: Well-structured, maintainable code with comprehensive tests
 
 ## Resources
 
--   [Discussions](https://github.com/lewisgibson/go-vdf/discussions)
--   [Reference](https://pkg.go.dev/github.com/lewisgibson/go-vdf)
--   [Examples](https://pkg.go.dev/github.com/lewisgibson/go-vdf#pkg-examples)
+- [Discussions](https://github.com/lewisgibson/go-vdf/discussions)
+- [Reference](https://pkg.go.dev/github.com/lewisgibson/go-vdf)
+- [Examples](https://pkg.go.dev/github.com/lewisgibson/go-vdf#pkg-examples)
 
 ## Installation
 
@@ -118,6 +120,35 @@ if err != nil {
 fmt.Println(string(vdfBytes))
 ```
 
+### Binary VDF
+
+```go
+// Decode binary VDF data
+var node govdf.Node
+if err := govdf.UnmarshalBinary(binaryData, &node); err != nil {
+    log.Fatal(err)
+}
+
+// Decode into a struct
+type AppInfo struct {
+    AppID string `vdf:"appid"`
+    Name  string `vdf:"name"`
+}
+type Root struct {
+    AppInfo AppInfo `vdf:"appinfo"`
+}
+var root Root
+if err := govdf.UnmarshalBinary(binaryData, &root); err != nil {
+    log.Fatal(err)
+}
+
+// Encode to binary VDF
+data, err := govdf.MarshalBinary(&node)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
 ### Custom Marshalers
 
 ```go
@@ -153,15 +184,21 @@ func (p *Player) UnmarshalVDF(node *govdf.Node) error {
 
 ## Performance
 
-Benchmark results on AMD Ryzen 9 5900X:
+Benchmark results on AMD Ryzen 9 9950X3D:
 
 ```
-BenchmarkUnmarshal_SimpleStruct-24         676,318 ops/sec    1,775 ns/op    5,296 B/op     18 allocs/op
-BenchmarkUnmarshal_ComplexStruct-24        181,114 ops/sec    6,168 ns/op    8,424 B/op     71 allocs/op
-BenchmarkUnmarshal_Node-24                 575,926 ops/sec    2,774 ns/op    5,816 B/op     31 allocs/op
-BenchmarkMarshal_SimpleStruct-24         1,528,666 ops/sec      804 ns/op      680 B/op     26 allocs/op
-BenchmarkMarshal_ComplexStruct-24          260,749 ops/sec    4,327 ns/op    3,131 B/op    135 allocs/op
-BenchmarkMarshal_Node-24                 1,092,033 ops/sec    1,044 ns/op      480 B/op     52 allocs/op
+BenchmarkUnmarshal_SimpleStruct-32         459,431 ops/sec    2,179 ns/op    5,296 B/op     18 allocs/op
+BenchmarkUnmarshal_ComplexStruct-32        192,668 ops/sec    5,190 ns/op    8,424 B/op     71 allocs/op
+BenchmarkUnmarshal_Node-32                 402,666 ops/sec    2,484 ns/op    5,816 B/op     31 allocs/op
+BenchmarkMarshal_SimpleStruct-32         1,477,711 ops/sec      677 ns/op      625 B/op     24 allocs/op
+BenchmarkMarshal_ComplexStruct-32          319,405 ops/sec    3,131 ns/op    2,989 B/op    134 allocs/op
+BenchmarkMarshal_Node-32                 1,290,747 ops/sec      775 ns/op      432 B/op     50 allocs/op
+BenchmarkUnmarshalBinary_Simple-32         487,994 ops/sec    2,049 ns/op    5,344 B/op     21 allocs/op
+BenchmarkUnmarshalBinary_Complex-32         91,996 ops/sec   10,870 ns/op   18,712 B/op    198 allocs/op
+BenchmarkUnmarshalBinary_Struct-32         348,796 ops/sec    2,868 ns/op    6,400 B/op     28 allocs/op
+BenchmarkMarshalBinary_Simple-32         3,084,447 ops/sec      324 ns/op      128 B/op     13 allocs/op
+BenchmarkMarshalBinary_Complex-32          198,492 ops/sec    5,038 ns/op    2,797 B/op    218 allocs/op
+BenchmarkMarshalBinary_Struct-32         1,392,251 ops/sec      719 ns/op      653 B/op     17 allocs/op
 ```
 
 ### Running Benchmarks
@@ -176,10 +213,14 @@ make bench
 
 ### Core Functions
 
--   `Unmarshal(data []byte, v any) error` - Parse VDF data into a struct or Node
--   `Marshal(v any) ([]byte, error)` - Encode a struct or Node to VDF format
--   `NewDecoder(r io.Reader) *Decoder` - Create a streaming decoder
--   `NewEncoder(w io.Writer) *Encoder` - Create a streaming encoder
+- `Unmarshal(data []byte, v any) error` - Parse VDF data into a struct or Node
+- `Marshal(v any) ([]byte, error)` - Encode a struct or Node to VDF format
+- `NewDecoder(r io.Reader) *Decoder` - Create a streaming decoder
+- `NewEncoder(w io.Writer) *Encoder` - Create a streaming encoder
+- `UnmarshalBinary(data []byte, v any) error` - Parse binary VDF data into a struct or Node
+- `MarshalBinary(v any) ([]byte, error)` - Encode a struct or Node to binary VDF format
+- `NewBinaryDecoder(r io.Reader) *BinaryDecoder` - Create a streaming binary decoder
+- `NewBinaryEncoder(w io.Writer) *BinaryEncoder` - Create a streaming binary encoder
 
 ### Node Structure
 
@@ -197,8 +238,8 @@ type Node struct {
 
 ### Interfaces
 
--   `Marshaler` - Implement `MarshalVDF() ([]byte, error)` for custom encoding
--   `Unmarshaler` - Implement `UnmarshalVDF(*Node) error` for custom decoding
+- `Marshaler` - Implement `MarshalVDF() ([]byte, error)` for custom encoding
+- `Unmarshaler` - Implement `UnmarshalVDF(*Node) error` for custom decoding
 
 ## Examples
 
