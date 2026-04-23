@@ -1,0 +1,16 @@
+# Coverage gates:
+#   project: auto   — no regression from the base commit (ratchet). Threshold 1% tolerates float noise.
+#   patch: 90%      — new/changed lines in this PR must be >= 90% covered.
+coverage:
+    status:
+        project:
+            default:
+                target: auto
+                threshold: 1%
+        patch:
+            default:
+                target: 90%
+
+ignore:
+    - 'examples'
+    - 'fixtures'

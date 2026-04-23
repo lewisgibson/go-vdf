@@ -117,7 +117,6 @@ func (d *Decoder) parse() (*Node, error) {
 	var stack = []*Node{root}
 	var currentKey string
 	var headComment string
-
 	for {
 		r, size, err := d.reader.ReadRune()
 		if err != nil {
@@ -217,10 +216,11 @@ func (d *Decoder) processRune(r rune, stack *[]*Node, currentKey *string, headCo
 func (d *Decoder) handleComment(headComment *string) error {
 	// Read the second '/' character to confirm this is a comment
 	r, _, err := d.reader.ReadRune()
-	if err != nil {
+	switch {
+	case err != nil:
 		return err
-	}
-	if r != '/' {
+
+	case r != '/':
 		return newParseErrorWithExpected(d.line, d.column, "expected '//' for comment", "//", "/"+string(r))
 	}
 
@@ -241,6 +241,7 @@ func (d *Decoder) handleComment(headComment *string) error {
 	// Update position
 	d.line++
 	d.column = 1
+
 	return nil
 }
 
@@ -363,13 +364,16 @@ func (d *Decoder) hasLineComment() bool {
 
 	// Look for whitespace followed by //
 	for i, b := range peeked {
-		if unicode.IsSpace(rune(b)) {
+		switch {
+		case unicode.IsSpace(rune(b)):
 			continue
-		}
-		if b == '/' && i+1 < len(peeked) && peeked[i+1] == '/' {
+
+		case b == '/' && i+1 < len(peeked) && peeked[i+1] == '/':
 			return true
+
+		default:
+			return false
 		}
-		return false
 	}
 
 	return false
@@ -462,7 +466,7 @@ type fieldInfo struct {
 // This function processes struct tags to build an efficient lookup table for field mapping.
 func buildFieldMap(structType reflect.Type) map[string]fieldInfo {
 	var fieldMap = make(map[string]fieldInfo)
-	for i := 0; i < structType.NumField(); i++ {
+	for i := range structType.NumField() {
 		// Skip unexported fields.
 		var field = structType.Field(i)
 		if !field.IsExported() {
@@ -550,30 +554,33 @@ func setScalarValue(field reflect.Value, value string) error {
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		var intVal, err = strconv.ParseInt(value, 10, 64)
-		if err != nil {
+		switch {
+		case err != nil:
 			return newTypeError("int", value, err)
-		}
-		if field.OverflowInt(intVal) {
+
+		case field.OverflowInt(intVal):
 			return newOverflowError("int", value)
 		}
 		field.SetInt(intVal)
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		var uintVal, err = strconv.ParseUint(value, 10, 64)
-		if err != nil {
+		switch {
+		case err != nil:
 			return newTypeError("uint", value, err)
-		}
-		if field.OverflowUint(uintVal) {
+
+		case field.OverflowUint(uintVal):
 			return newOverflowError("uint", value)
 		}
 		field.SetUint(uintVal)
 
 	case reflect.Float32, reflect.Float64:
 		var floatVal, err = strconv.ParseFloat(value, 64)
-		if err != nil {
+		switch {
+		case err != nil:
 			return newTypeError("float", value, err)
-		}
-		if field.OverflowFloat(floatVal) {
+
+		case field.OverflowFloat(floatVal):
 			return newOverflowError("float", value)
 		}
 		field.SetFloat(floatVal)

@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	govdf "github.com/lewisgibson/go-vdf"
+	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkUnmarshal_SimpleStruct(b *testing.B) {
-	var vdfData = strings.Join([]string{
+	vdfData := strings.Join([]string{
 		`"name" "John Doe"`,
 		`"age" "30"`,
 	}, "\n")
@@ -21,14 +22,12 @@ func BenchmarkUnmarshal_SimpleStruct(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		var person Person
-		if err := govdf.Unmarshal([]byte(vdfData), &person); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, govdf.Unmarshal([]byte(vdfData), &person))
 	}
 }
 
 func BenchmarkUnmarshal_ComplexStruct(b *testing.B) {
-	var vdfData = strings.Join([]string{
+	vdfData := strings.Join([]string{
 		`"id" "12345"`,
 		`"name" "Jane Smith"`,
 		`"email" "jane.smith@example.com"`,
@@ -69,14 +68,12 @@ func BenchmarkUnmarshal_ComplexStruct(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		var employee Employee
-		if err := govdf.Unmarshal([]byte(vdfData), &employee); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, govdf.Unmarshal([]byte(vdfData), &employee))
 	}
 }
 
 func BenchmarkUnmarshal_Node(b *testing.B) {
-	var vdfData = strings.Join([]string{
+	vdfData := strings.Join([]string{
 		`"user" {`,
 		`	"name" "John Doe"`,
 		`	"age" "30"`,
@@ -90,14 +87,12 @@ func BenchmarkUnmarshal_Node(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		var node govdf.Node
-		if err := govdf.Unmarshal([]byte(vdfData), &node); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, govdf.Unmarshal([]byte(vdfData), &node))
 	}
 }
 
 func BenchmarkUnmarshal_WithComments(b *testing.B) {
-	var vdfData = strings.Join([]string{
+	vdfData := strings.Join([]string{
 		`// This is a head comment`,
 		`"user" {`,
 		`	"name" "John Doe"	// This is a line comment`,
@@ -121,14 +116,12 @@ func BenchmarkUnmarshal_WithComments(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		var user User
-		if err := govdf.Unmarshal([]byte(vdfData), &user); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, govdf.Unmarshal([]byte(vdfData), &user))
 	}
 }
 
 func BenchmarkUnmarshal_QuotedStrings(b *testing.B) {
-	var vdfData = strings.Join([]string{
+	vdfData := strings.Join([]string{
 		`"message" "Hello \"world\" with quotes"`,
 		`"path" "C:\\Program Files\\Game"`,
 		`"json" "{\"key\": \"value\"}"`,
@@ -143,14 +136,12 @@ func BenchmarkUnmarshal_QuotedStrings(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		var data Data
-		if err := govdf.Unmarshal([]byte(vdfData), &data); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, govdf.Unmarshal([]byte(vdfData), &data))
 	}
 }
 
 func BenchmarkUnmarshal_MixedTypes(b *testing.B) {
-	var vdfData = strings.Join([]string{
+	vdfData := strings.Join([]string{
 		`"string_field" "hello world"`,
 		`"int_field" "42"`,
 		`"bool_field" "true"`,
@@ -167,14 +158,12 @@ func BenchmarkUnmarshal_MixedTypes(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		var data MixedData
-		if err := govdf.Unmarshal([]byte(vdfData), &data); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, govdf.Unmarshal([]byte(vdfData), &data))
 	}
 }
 
 func BenchmarkUnmarshal_Parallel(b *testing.B) {
-	var vdfData = strings.Join([]string{
+	vdfData := strings.Join([]string{
 		`"id" "42"`,
 		`"name" "test"`,
 		`"value" "benchmark data"`,
@@ -190,16 +179,14 @@ func BenchmarkUnmarshal_Parallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			var data Data
-			if err := govdf.Unmarshal([]byte(vdfData), &data); err != nil {
-				b.Fatal(err)
-			}
+			require.NoError(b, govdf.Unmarshal([]byte(vdfData), &data))
 		}
 	})
 }
 
 func BenchmarkUnmarshal_LargeNested(b *testing.B) {
 	// Create a large nested VDF structure
-	var vdfData = strings.Join([]string{
+	vdfData := strings.Join([]string{
 		`"level1" {`,
 		`	"level2a" {`,
 		`		"level3a" {`,
@@ -249,14 +236,12 @@ func BenchmarkUnmarshal_LargeNested(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		var level1 Level1
-		if err := govdf.Unmarshal([]byte(vdfData), &level1); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, govdf.Unmarshal([]byte(vdfData), &level1))
 	}
 }
 
 func BenchmarkUnmarshal_CustomUnmarshaler(b *testing.B) {
-	var vdfData = `"custom_field" "test_value"`
+	vdfData := `"custom_field" "test_value"`
 
 	type CustomUnmarshalerStruct struct {
 		CustomField mockUnmarshaler `vdf:"custom_field"`
@@ -265,14 +250,12 @@ func BenchmarkUnmarshal_CustomUnmarshaler(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		var data CustomUnmarshalerStruct
-		if err := govdf.Unmarshal([]byte(vdfData), &data); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, govdf.Unmarshal([]byte(vdfData), &data))
 	}
 }
 
 func BenchmarkUnmarshal_OptionalFields(b *testing.B) {
-	var vdfData = strings.Join([]string{
+	vdfData := strings.Join([]string{
 		`"required" {`,
 		`	"name" "John"`,
 		`	"age" "30"`,
@@ -297,8 +280,6 @@ func BenchmarkUnmarshal_OptionalFields(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		var data TestStruct
-		if err := govdf.Unmarshal([]byte(vdfData), &data); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, govdf.Unmarshal([]byte(vdfData), &data))
 	}
 }

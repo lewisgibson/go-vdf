@@ -5,8 +5,7 @@ import (
 	"fmt"
 )
 
-// Sentinel errors for common VDF operations.
-// These are predefined errors that can be used for error checking with errors.Is.
+// Sentinel Errors.
 var (
 	// ErrNilValue is returned when attempting to encode a nil value.
 	// This typically occurs when passing nil to the Marshal function.
@@ -192,7 +191,7 @@ type ValidationError struct {
 
 // Error returns a formatted error message describing the validation failure.
 func (e *ValidationError) Error() string {
-	return fmt.Sprintf("validation error: %s", e.Message)
+	return "validation error: " + e.Message
 }
 
 // newValidationError creates a new ValidationError with the specified message.

@@ -9,7 +9,6 @@
         "customFormatter": "golangci-lint-v2"
     },
 
-    // Golangci-lint performs govet checks for us.
     "gopls": {
         "staticcheck": false,
         "analyses": {
@@ -25,6 +24,10 @@
     },
 
     "files.readonlyInclude": {
+        "vendor/**": true
+    },
+
+    "files.exclude": {
         "vendor/**": true
     }
 }

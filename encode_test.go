@@ -2,7 +2,7 @@ package govdf_test
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -214,7 +214,6 @@ func TestEncode_Struct(t *testing.T) {
 			expected: `"custom" "test_value"`,
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -317,7 +316,6 @@ func TestEncode_ErrorHandling(t *testing.T) {
 			expectError: false, // This actually works fine
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -336,11 +334,30 @@ func TestEncode_ErrorHandling(t *testing.T) {
 	}
 }
 
+// failWriter is a writer that always returns an error.
+type failWriter struct{ err error }
+
+func (f *failWriter) Write([]byte) (int, error) { return 0, f.err }
+
+// failAfterN is a writer that succeeds for n writes then fails.
+type failAfterN struct {
+	n   int
+	err error
+}
+
+func (f *failAfterN) Write(p []byte) (int, error) {
+	if f.n <= 0 {
+		return 0, f.err
+	}
+	f.n--
+	return len(p), nil
+}
+
 // errorMarshaler is a mock type that always returns an error for testing.
 type errorMarshaler struct{}
 
 func (e *errorMarshaler) MarshalVDF() ([]byte, error) {
-	return nil, fmt.Errorf("custom marshaler error")
+	return nil, errors.New("custom marshaler error")
 }
 
 // errorMarshalerWithUnmarshalError is a mock type that returns data that fails to unmarshal.
@@ -348,6 +365,253 @@ type errorMarshalerWithUnmarshalError struct{}
 
 func (e *errorMarshalerWithUnmarshalError) MarshalVDF() ([]byte, error) {
 	return []byte(`invalid vdf data`), nil
+}
+
+func TestEncode_WriterErrors(t *testing.T) {
+	t.Parallel()
+
+	var writeErr = errors.New("write failed")
+
+	var testCases = map[string]struct {
+		node *govdf.Node
+	}{
+		"encodeMap key write error": {
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"key": {Type: govdf.NodeTypeScalar, Value: "value"},
+				},
+			},
+		},
+		"encodeMap nested map opening brace write error": {
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"parent": {
+						Type: govdf.NodeTypeMap,
+						Children: map[string]*govdf.Node{
+							"child": {Type: govdf.NodeTypeScalar, Value: "value"},
+						},
+					},
+				},
+			},
+		},
+		"encodeMap nested map closing brace write error": {
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"parent": {
+						Type:     govdf.NodeTypeMap,
+						Children: map[string]*govdf.Node{},
+					},
+				},
+			},
+		},
+		"encodeMap scalar space write error": {
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"key": {Type: govdf.NodeTypeScalar, Value: "value"},
+				},
+			},
+		},
+		"encodeMap scalar line comment write error": {
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"key": {Type: govdf.NodeTypeScalar, Value: "value", LineComment: "comment"},
+				},
+			},
+		},
+		"encodeMap scalar newline write error": {
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"key": {Type: govdf.NodeTypeScalar, Value: "value"},
+				},
+			},
+		},
+		"encodeScalar head comment write error": {
+			node: &govdf.Node{
+				Type:        govdf.NodeTypeScalar,
+				Value:       "value",
+				HeadComment: "comment",
+			},
+		},
+		"encodeScalar value write error": {
+			node: &govdf.Node{
+				Type:  govdf.NodeTypeScalar,
+				Value: "value",
+			},
+		},
+		"encodeScalar line comment write error": {
+			node: &govdf.Node{
+				Type:        govdf.NodeTypeScalar,
+				Value:       "value",
+				LineComment: "comment",
+			},
+		},
+		"encodeScalar trailing newline write error": {
+			node: &govdf.Node{
+				Type:  govdf.NodeTypeScalar,
+				Value: "value",
+			},
+		},
+		"encodeMap head comment write error": {
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"key": {Type: govdf.NodeTypeScalar, Value: "value", HeadComment: "comment"},
+				},
+			},
+		},
+		"writeIndent write error": {
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"parent": {
+						Type: govdf.NodeTypeMap,
+						Children: map[string]*govdf.Node{
+							"child": {Type: govdf.NodeTypeScalar, Value: "value"},
+						},
+					},
+				},
+			},
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			fw := &failWriter{err: writeErr}
+			encoder := govdf.NewEncoder(fw)
+			err := encoder.Encode(tc.node)
+			require.Error(t, err)
+			require.ErrorIs(t, err, writeErr)
+		})
+	}
+}
+
+func TestEncode_WriterErrorsDeep(t *testing.T) {
+	t.Parallel()
+
+	var writeErr = errors.New("write failed")
+
+	var testCases = map[string]struct {
+		failAfter int
+		node      *govdf.Node
+	}{
+		"writeQuotedString content write error": {
+			failAfter: 1,
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"key": {Type: govdf.NodeTypeScalar, Value: "value"},
+				},
+			},
+		},
+		"writeQuotedString closing quote error": {
+			failAfter: 2,
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"key": {Type: govdf.NodeTypeScalar, Value: "value"},
+				},
+			},
+		},
+		"encodeMap scalar value quote error": {
+			failAfter: 4,
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"key": {Type: govdf.NodeTypeScalar, Value: "value"},
+				},
+			},
+		},
+		"encodeMap scalar newline error": {
+			failAfter: 8,
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"key": {Type: govdf.NodeTypeScalar, Value: "value"},
+				},
+			},
+		},
+		"encodeScalar head comment error": {
+			failAfter: 0,
+			node: &govdf.Node{
+				Type:        govdf.NodeTypeScalar,
+				Value:       "test",
+				HeadComment: "a comment",
+			},
+		},
+		"encodeScalar value error": {
+			failAfter: 1,
+			node: &govdf.Node{
+				Type:  govdf.NodeTypeScalar,
+				Value: "test",
+			},
+		},
+		"encodeScalar line comment error": {
+			failAfter: 3,
+			node: &govdf.Node{
+				Type:        govdf.NodeTypeScalar,
+				Value:       "test",
+				LineComment: "inline",
+			},
+		},
+		"encodeScalar trailing newline error": {
+			failAfter: 3,
+			node: &govdf.Node{
+				Type:  govdf.NodeTypeScalar,
+				Value: "test",
+			},
+		},
+		"writeHeadComment indent error": {
+			failAfter: 0,
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"key": {Type: govdf.NodeTypeScalar, Value: "v", HeadComment: "comment"},
+				},
+			},
+		},
+		"encodeMap nested indent error for closing brace": {
+			failAfter: 5,
+			node: &govdf.Node{
+				Type: govdf.NodeTypeMap,
+				Children: map[string]*govdf.Node{
+					"parent": {
+						Type: govdf.NodeTypeMap,
+						Children: map[string]*govdf.Node{
+							"child": {Type: govdf.NodeTypeScalar, Value: "v"},
+						},
+					},
+				},
+			},
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			fw := &failAfterN{n: tc.failAfter, err: writeErr}
+			encoder := govdf.NewEncoder(fw)
+			err := encoder.Encode(tc.node)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestEncode_WriterError_Marshaler(t *testing.T) {
+	t.Parallel()
+
+	var writeErr = errors.New("write failed")
+	fw := &failWriter{err: writeErr}
+	encoder := govdf.NewEncoder(fw)
+	err := encoder.Encode(&mockMarshaler{value: "test"})
+	require.Error(t, err)
+	require.ErrorIs(t, err, writeErr)
 }
 
 func TestEncode_EdgeCases(t *testing.T) {
@@ -612,8 +876,89 @@ world"`,
 			},
 			expected: `"custom" "test_value"`,
 		},
+		"uint types": {
+			input: func() any {
+				type TestStruct struct {
+					Uint   uint   `vdf:"uint"`
+					Uint8  uint8  `vdf:"uint8"`
+					Uint16 uint16 `vdf:"uint16"`
+					Uint32 uint32 `vdf:"uint32"`
+					Uint64 uint64 `vdf:"uint64"`
+				}
+				return TestStruct{
+					Uint:   42,
+					Uint8:  255,
+					Uint16: 65535,
+					Uint32: 4294967295,
+					Uint64: 18446744073709551615,
+				}
+			},
+			expected: strings.Join([]string{
+				`"uint" "42"`,
+				`"uint16" "65535"`,
+				`"uint32" "4294967295"`,
+				`"uint64" "18446744073709551615"`,
+				`"uint8" "255"`,
+			}, "\n"),
+		},
+		"int types": {
+			input: func() any {
+				type TestStruct struct {
+					Int   int   `vdf:"int"`
+					Int8  int8  `vdf:"int8"`
+					Int16 int16 `vdf:"int16"`
+					Int32 int32 `vdf:"int32"`
+					Int64 int64 `vdf:"int64"`
+				}
+				return TestStruct{
+					Int:   -1,
+					Int8:  -128,
+					Int16: -32768,
+					Int32: -2147483648,
+					Int64: -9223372036854775808,
+				}
+			},
+			expected: strings.Join([]string{
+				`"int" "-1"`,
+				`"int16" "-32768"`,
+				`"int32" "-2147483648"`,
+				`"int64" "-9223372036854775808"`,
+				`"int8" "-128"`,
+			}, "\n"),
+		},
+		"float types": {
+			input: func() any {
+				type TestStruct struct {
+					Float32 float32 `vdf:"float32"`
+					Float64 float64 `vdf:"float64"`
+				}
+				return TestStruct{
+					Float32: 1.5,
+					Float64: 2.5,
+				}
+			},
+			expected: strings.Join([]string{
+				`"float32" "1.5"`,
+				`"float64" "2.5"`,
+			}, "\n"),
+		},
+		"bool types": {
+			input: func() any {
+				type TestStruct struct {
+					True  bool `vdf:"true_field"`
+					False bool `vdf:"false_field"`
+				}
+				return TestStruct{
+					True:  true,
+					False: false,
+				}
+			},
+			expected: strings.Join([]string{
+				`"false_field" "false"`,
+				`"true_field" "true"`,
+			}, "\n"),
+		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -626,4 +971,46 @@ world"`,
 			require.Equal(t, expected, actual)
 		})
 	}
+}
+
+func TestEncode_UnsupportedFieldType(t *testing.T) {
+	t.Parallel()
+
+	type TestStruct struct {
+		Ch chan int `vdf:"ch"`
+	}
+
+	_, err := govdf.Marshal(TestStruct{Ch: make(chan int)})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unsupported type")
+}
+
+func TestEncode_CustomMarshalerInStruct(t *testing.T) {
+	t.Parallel()
+
+	type Container struct {
+		Custom *mockMarshaler `vdf:"custom"`
+	}
+
+	container := Container{Custom: &mockMarshaler{value: "test_value"}}
+	result, err := govdf.Marshal(container)
+	require.NoError(t, err)
+	require.Contains(t, string(result), "test_value")
+}
+
+func TestEncode_PointerField(t *testing.T) {
+	t.Parallel()
+
+	type Inner struct {
+		Name string `vdf:"name"`
+	}
+	type Outer struct {
+		Inner *Inner `vdf:"inner"`
+		Nil   *Inner `vdf:"nil"`
+	}
+
+	outer := Outer{Inner: &Inner{Name: "test"}}
+	result, err := govdf.Marshal(outer)
+	require.NoError(t, err)
+	require.Contains(t, string(result), "test")
 }

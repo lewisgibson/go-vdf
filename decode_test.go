@@ -3,7 +3,7 @@ package govdf_test
 import (
 	"embed"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -375,7 +375,7 @@ type mockUnmarshaler string
 // UnmarshalVDF implements the UnmarshalVDF method for the mockUnmarshaler type.
 func (c *mockUnmarshaler) UnmarshalVDF(node *govdf.Node) error {
 	if node.Type == govdf.NodeTypeScalar {
-		*c = mockUnmarshaler(fmt.Sprintf("custom:%s", node.Value))
+		*c = mockUnmarshaler("custom:" + node.Value)
 	}
 	return nil
 }
@@ -710,7 +710,6 @@ func TestDecode_ErrorHandling(t *testing.T) {
 			errorSubstr: "unexpected character",
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -882,7 +881,6 @@ func TestDecode_EdgeCases(t *testing.T) {
 			},
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -1075,7 +1073,6 @@ func TestDecode_StructMappingErrors(t *testing.T) {
 			errorSubstr: "custom unmarshaler error",
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -1100,7 +1097,7 @@ type errorUnmarshaler string
 
 // UnmarshalVDF implements the UnmarshalVDF method for the errorUnmarshaler type.
 func (e *errorUnmarshaler) UnmarshalVDF(node *govdf.Node) error {
-	return fmt.Errorf("custom unmarshaler error")
+	return errors.New("custom unmarshaler error")
 }
 
 func TestDecode_StructMappingEdgeCases(t *testing.T) {
@@ -1202,4 +1199,223 @@ func TestDecode_StructMappingEdgeCases(t *testing.T) {
 		require.InDelta(t, float32(3.14), result.Float32, 0.001)
 		require.InDelta(t, 3.14159265359, result.Float64, 0.001)
 	})
+}
+
+func TestPositionError_Unwrap(t *testing.T) {
+	t.Parallel()
+
+	var inner = errors.New("inner error")
+	var posErr = &govdf.PositionError{
+		Line:   10,
+		Column: 5,
+		Err:    inner,
+	}
+
+	require.ErrorIs(t, posErr, inner)
+	require.Equal(t, inner, posErr.Unwrap())
+	require.Contains(t, posErr.Error(), "line 10, column 5")
+	require.Contains(t, posErr.Error(), "inner error")
+}
+
+func TestPositionError_NilUnwrap(t *testing.T) {
+	t.Parallel()
+
+	var posErr = &govdf.PositionError{
+		Line:   1,
+		Column: 1,
+		Err:    nil,
+	}
+
+	require.NoError(t, posErr.Unwrap())
+}
+
+func TestTypeError_Unwrap(t *testing.T) {
+	t.Parallel()
+
+	var inner = errors.New("strconv error")
+	var typeErr = &govdf.TypeError{
+		Type:     "int",
+		Value:    "abc",
+		Original: inner,
+	}
+
+	require.ErrorIs(t, typeErr, inner)
+	require.Equal(t, inner, typeErr.Unwrap())
+	require.Contains(t, typeErr.Error(), `error converting "abc" to int`)
+	require.Contains(t, typeErr.Error(), "strconv error")
+}
+
+func TestTypeError_NilUnwrap(t *testing.T) {
+	t.Parallel()
+
+	var typeErr = &govdf.TypeError{
+		Type:     "int",
+		Value:    "abc",
+		Original: nil,
+	}
+
+	require.NoError(t, typeErr.Unwrap())
+}
+
+func TestOverflowError(t *testing.T) {
+	t.Parallel()
+
+	var testCases = map[string]struct {
+		overflowType string
+		value        string
+		expected     string
+	}{
+		"int64 overflow": {
+			overflowType: "int64",
+			value:        "9223372036854775808",
+			expected:     "int64 value 9223372036854775808 overflows",
+		},
+		"uint64 overflow": {
+			overflowType: "uint64",
+			value:        "18446744073709551616",
+			expected:     "uint64 value 18446744073709551616 overflows",
+		},
+		"float32 overflow": {
+			overflowType: "float32",
+			value:        "1e400",
+			expected:     "float32 value 1e400 overflows",
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var overflowErr = &govdf.OverflowError{
+				Type:  tc.overflowType,
+				Value: tc.value,
+			}
+
+			require.Equal(t, tc.expected, overflowErr.Error())
+		})
+	}
+}
+
+func TestParseError_WithExpected(t *testing.T) {
+	t.Parallel()
+
+	var parseErr = &govdf.ParseError{
+		Line:     5,
+		Column:   12,
+		Message:  "unexpected token",
+		Expected: "string",
+		Found:    "{",
+	}
+
+	result := parseErr.Error()
+	require.Contains(t, result, "line 5, column 12")
+	require.Contains(t, result, "unexpected token")
+	require.Contains(t, result, `expected "string"`)
+	require.Contains(t, result, `found "{"`)
+}
+
+func TestParseError_WithoutExpected(t *testing.T) {
+	t.Parallel()
+
+	var parseErr = &govdf.ParseError{
+		Line:    3,
+		Column:  7,
+		Message: "invalid character",
+	}
+
+	result := parseErr.Error()
+	require.Contains(t, result, "line 3, column 7")
+	require.Contains(t, result, "invalid character")
+	require.NotContains(t, result, "expected")
+	require.NotContains(t, result, "found")
+}
+
+func TestValidationError(t *testing.T) {
+	t.Parallel()
+
+	var valErr = &govdf.ValidationError{
+		Message: "target must be a non-nil pointer",
+	}
+
+	require.Equal(t, "validation error: target must be a non-nil pointer", valErr.Error())
+}
+
+func TestDecode_MapTypeField(t *testing.T) {
+	t.Parallel()
+
+	type WithMap struct {
+		Data map[string]string `vdf:"data"`
+	}
+
+	var target WithMap
+	err := govdf.Unmarshal([]byte(`"data" { "key" "value" }`), &target)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "map type not supported")
+}
+
+func TestDecode_UnsupportedMapValueType(t *testing.T) {
+	t.Parallel()
+
+	type WithChan struct {
+		Data chan int `vdf:"data"`
+	}
+
+	var target WithChan
+	err := govdf.Unmarshal([]byte(`"data" { "key" "value" }`), &target)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unsupported type")
+}
+
+func TestDecode_IntOverflow(t *testing.T) {
+	t.Parallel()
+
+	type Small struct {
+		Val int8 `vdf:"val"`
+	}
+
+	var target Small
+	err := govdf.Unmarshal([]byte(`"val" "999"`), &target)
+	require.Error(t, err)
+	require.Error(t, err)
+}
+
+func TestDecode_UintOverflow(t *testing.T) {
+	t.Parallel()
+
+	type Small struct {
+		Val uint8 `vdf:"val"`
+	}
+
+	var target Small
+	err := govdf.Unmarshal([]byte(`"val" "999"`), &target)
+	require.Error(t, err)
+	require.Error(t, err)
+}
+
+func TestDecode_FloatOverflow(t *testing.T) {
+	t.Parallel()
+
+	type Small struct {
+		Val float32 `vdf:"val"`
+	}
+
+	var target Small
+	err := govdf.Unmarshal([]byte(`"val" "1e+999"`), &target)
+	require.Error(t, err)
+	require.Error(t, err)
+}
+
+func TestDecode_CannotSetStructField(t *testing.T) {
+	t.Parallel()
+
+	type Inner struct {
+		Val string `vdf:"val"`
+	}
+	type Outer struct {
+		Inner Inner `vdf:"inner"`
+	}
+
+	var target Outer
+	err := govdf.Unmarshal([]byte(`"inner" { "val" "test" }`), &target)
+	require.NoError(t, err)
+	require.Equal(t, "test", target.Inner.Val)
 }

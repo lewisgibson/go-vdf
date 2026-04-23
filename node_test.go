@@ -398,3 +398,44 @@ func TestNode_MarshalJSONEdgeCases(t *testing.T) {
 		})
 	}
 }
+
+func TestNode_UnmarshalJSON_UnsupportedType(t *testing.T) {
+	t.Parallel()
+
+	var testCases = map[string]struct {
+		input       string
+		expectError bool
+	}{
+		"array input": {
+			input:       `[1, 2, 3]`,
+			expectError: true,
+		},
+		"boolean true": {
+			input:       `true`,
+			expectError: true,
+		},
+		"boolean false": {
+			input:       `false`,
+			expectError: true,
+		},
+		"bare number": {
+			input:       `42`,
+			expectError: true,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var node govdf.Node
+			err := json.Unmarshal([]byte(tc.input), &node)
+
+			if tc.expectError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "cannot unmarshal JSON data into Node")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
