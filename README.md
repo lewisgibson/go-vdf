@@ -8,6 +8,7 @@ A high-performance parser and encoder for the [VDF (Valve Data Format)](https://
 ## Features
 
 -   ✅ **Complete VDF Support**: Parse and encode VDF files with full feature support
+-   ✅ **Binary VDF Support**: Parse and encode binary VDF (Valve's binary KeyValues format)
 -   ✅ **Struct Mapping**: Direct unmarshaling to Go structs with `vdf` tags
 -   ✅ **Node Tree API**: Work with VDF data as a tree of nodes
 -   ✅ **Comment Preservation**: Maintains head and line comments during parsing
@@ -180,6 +181,10 @@ make bench
 -   `Marshal(v any) ([]byte, error)` - Encode a struct or Node to VDF format
 -   `NewDecoder(r io.Reader) *Decoder` - Create a streaming decoder
 -   `NewEncoder(w io.Writer) *Encoder` - Create a streaming encoder
+-   `UnmarshalBinary(data []byte, v any) error` - Parse binary VDF data into a struct or Node
+-   `MarshalBinary(v any) ([]byte, error)` - Encode a struct or Node to binary VDF format
+-   `NewBinaryDecoder(r io.Reader) *BinaryDecoder` - Create a streaming binary decoder
+-   `NewBinaryEncoder(w io.Writer) *BinaryEncoder` - Create a streaming binary encoder
 
 ### Node Structure
 
