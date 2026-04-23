@@ -12,10 +12,7 @@ func TestPool_EmptyPool(t *testing.T) {
 	t.Parallel()
 
 	// Arrange: Create a pool for testing
-	pool := internal.NewPool(func() *int {
-		val := 42
-		return &val
-	})
+	pool := internal.NewPool(func() *int { return new(42) })
 
 	// Act: Get multiple objects without putting any back
 	val1 := pool.Get()
@@ -33,10 +30,7 @@ func TestPool_GetPut(t *testing.T) {
 	t.Parallel()
 
 	// Arrange: Create a pool for testing
-	pool := internal.NewPool(func() *int {
-		val := 42
-		return &val
-	})
+	pool := internal.NewPool(func() *int { return new(42) })
 
 	// Act: Test basic Get/Put cycle
 	val1 := pool.Get()
@@ -65,10 +59,7 @@ func TestPool_ReuseBehavior(t *testing.T) {
 	t.Parallel()
 
 	// Arrange: Create a pool for testing
-	pool := internal.NewPool(func() *int {
-		val := 0
-		return &val
-	})
+	pool := internal.NewPool(func() *int { return new(0) })
 
 	// Act: Get an object, modify it, and put it back
 	val1 := pool.Get()
@@ -98,10 +89,7 @@ func TestPool_ConcurrentAccess(t *testing.T) {
 	t.Parallel()
 
 	// Arrange: Create a pool for testing
-	pool := internal.NewPool(func() *int {
-		val := 0
-		return &val
-	})
+	pool := internal.NewPool(func() *int { return new(0) })
 
 	const numGoroutines = 100
 	const numOperations = 1000
@@ -110,11 +98,11 @@ func TestPool_ConcurrentAccess(t *testing.T) {
 	results := make(chan *int, numGoroutines*numOperations)
 
 	// Act: Spawn multiple goroutines that Get/Put from the pool
-	for i := 0; i < numGoroutines; i++ {
+	for range numGoroutines {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for j := 0; j < numOperations; j++ {
+			for j := range numOperations {
 				val := pool.Get()
 				*val = j // Set some value
 				results <- val
@@ -127,7 +115,7 @@ func TestPool_ConcurrentAccess(t *testing.T) {
 	close(results)
 
 	// Assert: Verify we got the expected number of results
-	count := 0
+	var count = 0
 	for range results {
 		count++
 	}
@@ -140,10 +128,7 @@ func TestPool_MultiplePuts(t *testing.T) {
 	t.Parallel()
 
 	// Arrange: Create a pool for testing
-	pool := internal.NewPool(func() *int {
-		val := 42
-		return &val
-	})
+	pool := internal.NewPool(func() *int { return new(42) })
 
 	// Act: Get an object and put it back multiple times
 	val := pool.Get()

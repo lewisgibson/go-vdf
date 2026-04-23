@@ -1,5 +1,8 @@
 * text=auto
 *.md eol=lf
 *.yaml eol=lf
+*.yml eol=lf
+*.sh eol=lf
+*.go eol=lf
 *.json eol=lf linguist-language=jsonc
 vendor -diff

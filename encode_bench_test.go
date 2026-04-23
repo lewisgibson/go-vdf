@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	govdf "github.com/lewisgibson/go-vdf"
+	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkMarshal_SimpleStruct(b *testing.B) {
@@ -12,16 +13,15 @@ func BenchmarkMarshal_SimpleStruct(b *testing.B) {
 		Age  int    `vdf:"age"`
 	}
 
-	var person = Person{
+	person := Person{
 		Name: "John Doe",
 		Age:  30,
 	}
 
 	b.ResetTimer()
 	for b.Loop() {
-		if _, err := govdf.Marshal(person); err != nil {
-			b.Fatal(err)
-		}
+		_, err := govdf.Marshal(person)
+		require.NoError(b, err)
 	}
 }
 
@@ -47,7 +47,7 @@ func BenchmarkMarshal_ComplexStruct(b *testing.B) {
 		Active  bool    `vdf:"active"`
 	}
 
-	var employee = Employee{
+	employee := Employee{
 		ID:    12345,
 		Name:  "Jane Smith",
 		Email: "jane.smith@example.com",
@@ -66,14 +66,13 @@ func BenchmarkMarshal_ComplexStruct(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		if _, err := govdf.Marshal(employee); err != nil {
-			b.Fatal(err)
-		}
+		_, err := govdf.Marshal(employee)
+		require.NoError(b, err)
 	}
 }
 
 func BenchmarkMarshal_Node(b *testing.B) {
-	var node = &govdf.Node{
+	node := &govdf.Node{
 		Type: govdf.NodeTypeMap,
 		Children: map[string]*govdf.Node{
 			"user": {
@@ -107,9 +106,8 @@ func BenchmarkMarshal_Node(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		if _, err := govdf.Marshal(node); err != nil {
-			b.Fatal(err)
-		}
+		_, err := govdf.Marshal(node)
+		require.NoError(b, err)
 	}
 }
 
@@ -120,7 +118,7 @@ func BenchmarkMarshal_Parallel(b *testing.B) {
 		Value string `vdf:"value"`
 	}
 
-	var data = Data{
+	data := Data{
 		ID:    42,
 		Name:  "test",
 		Value: "benchmark data",
@@ -129,9 +127,8 @@ func BenchmarkMarshal_Parallel(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			if _, err := govdf.Marshal(data); err != nil {
-				b.Fatal(err)
-			}
+			_, err := govdf.Marshal(data)
+		require.NoError(b, err)
 		}
 	})
 }

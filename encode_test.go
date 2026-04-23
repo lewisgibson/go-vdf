@@ -2,7 +2,7 @@ package govdf_test
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -214,7 +214,6 @@ func TestEncode_Struct(t *testing.T) {
 			expected: `"custom" "test_value"`,
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -317,7 +316,6 @@ func TestEncode_ErrorHandling(t *testing.T) {
 			expectError: false, // This actually works fine
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -340,7 +338,7 @@ func TestEncode_ErrorHandling(t *testing.T) {
 type errorMarshaler struct{}
 
 func (e *errorMarshaler) MarshalVDF() ([]byte, error) {
-	return nil, fmt.Errorf("custom marshaler error")
+	return nil, errors.New("custom marshaler error")
 }
 
 // errorMarshalerWithUnmarshalError is a mock type that returns data that fails to unmarshal.
@@ -613,7 +611,6 @@ world"`,
 			expected: `"custom" "test_value"`,
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

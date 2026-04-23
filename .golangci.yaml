@@ -4,31 +4,105 @@ run:
 
 linters:
     enable:
-        - testifylint
-        - usestdlibvars
+        # copyloopvar: Detects loop variable copies that are unnecessary since Go 1.22
         - copyloopvar
+
+        # dupword: Detects duplicate adjacent words in comments and strings
+        - dupword
+
+        # durationcheck: Detects cases where two durations are multiplied which
+        # results in unexpected time.Duration values
+        - durationcheck
+
+        # errname: Enforces sentinel error naming convention (ErrFoo)
+        - errname
+
+        # errorlint: Finds code that will cause problems with Go error wrapping,
+        # such as using == instead of errors.Is and fmt.Errorf without %w
         - errorlint
+
+        # fatcontext: Detects nested context.WithValue calls that should be
+        # replaced with a single call carrying a struct
+        - fatcontext
+
+        # gosec: Security-oriented linter inspecting source code for common
+        # vulnerabilities and hardcoded credentials
         - gosec
+
+        # intrange: Detects for loops that can use Go 1.22+ integer range syntax
+        - intrange
+
+        # misspell: Finds commonly misspelled English words in comments and strings
         - misspell
 
+        # nakedret: Detects naked returns in functions longer than a threshold,
+        # which hurt readability
+        - nakedret
+
+        # nilerr: Detects code that returns nil even if the error is not nil,
+        # typically a copy-paste bug
+        - nilerr
+
+        # nolintlint: Ensures nolint directives are specific and have a reason,
+        # preventing stale or overly broad suppressions
+        - nolintlint
+
+        # perfsprint: Detects fmt.Sprintf calls that can be replaced with faster
+        # alternatives like strconv or string concatenation
+        - perfsprint
+
+        # testifylint: Enforces best practices when using testify assertions,
+        # such as correct argument order and preferred assertion methods
+        - testifylint
+
+        # unconvert: Detects unnecessary type conversions
+        - unconvert
+
+        # usestdlibvars: Detects cases where stdlib constants or variables should
+        # be used instead of hardcoded values (e.g. http.StatusOK)
+        - usestdlibvars
+
+        # whitespace: Detects unnecessary leading and trailing blank lines in
+        # function bodies, if/else blocks, etc.
+        - whitespace
+
     disable:
+        # errcheck: Disabled because we prefer explicit error handling patterns
+        # and use errorlint to catch error wrapping issues. The codebase uses
+        # intentional error ignoring in cleanup paths and optional operations.
         - errcheck
 
     exclusions:
         rules:
             - path: '(.+)_test\.go$'
               linters:
+                  # gosec: Disable in test files to allow reading fixture files,
+                  # test data, and hardcoded test values that trigger security
+                  # warnings but are safe in test context
                   - gosec
 
     settings:
         staticcheck:
             checks:
                 - all
+                # S1011: Allow len(x) == 0 patterns which are often more readable
+                # than x == nil checks
                 - '-S1011'
+                # ST1000: Allow packages without package-level documentation
                 - '-ST1000'
+                # ST1003: Allow single-letter receiver names (e.g., 'd' for Decoder)
+                # which are standard Go convention
                 - '-ST1003'
-                - '-SA1012'
+
+        testifylint:
+            disable:
+                # equal-values: Allow assert.True(t, a == b) for comparing values
+                # stored in different integer types where assert.Equal would require
+                # explicit casting
+                - equal-values
 
         gosec:
             excludes:
+                # G104: Allow intentionally unhandled errors in cleanup and
+                # optional operations
                 - 'G104'

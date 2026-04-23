@@ -3,7 +3,7 @@ package govdf_test
 import (
 	"embed"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -375,7 +375,7 @@ type mockUnmarshaler string
 // UnmarshalVDF implements the UnmarshalVDF method for the mockUnmarshaler type.
 func (c *mockUnmarshaler) UnmarshalVDF(node *govdf.Node) error {
 	if node.Type == govdf.NodeTypeScalar {
-		*c = mockUnmarshaler(fmt.Sprintf("custom:%s", node.Value))
+		*c = mockUnmarshaler("custom:" + node.Value)
 	}
 	return nil
 }
@@ -710,7 +710,6 @@ func TestDecode_ErrorHandling(t *testing.T) {
 			errorSubstr: "unexpected character",
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -882,7 +881,6 @@ func TestDecode_EdgeCases(t *testing.T) {
 			},
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -1075,7 +1073,6 @@ func TestDecode_StructMappingErrors(t *testing.T) {
 			errorSubstr: "custom unmarshaler error",
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -1100,7 +1097,7 @@ type errorUnmarshaler string
 
 // UnmarshalVDF implements the UnmarshalVDF method for the errorUnmarshaler type.
 func (e *errorUnmarshaler) UnmarshalVDF(node *govdf.Node) error {
-	return fmt.Errorf("custom unmarshaler error")
+	return errors.New("custom unmarshaler error")
 }
 
 func TestDecode_StructMappingEdgeCases(t *testing.T) {

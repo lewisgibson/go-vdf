@@ -304,13 +304,13 @@ func structToNode(v any) (*Node, error) {
 		return nil, newValidationError(fmt.Sprintf("expected struct, got %v", val.Kind()))
 	}
 
-	var node = &Node{
+	node := &Node{
 		Type:     NodeTypeMap,
 		Children: make(map[string]*Node),
 	}
 
 	// Process each field
-	for i := 0; i < val.NumField(); i++ {
+	for i := range val.NumField() {
 		// Skip unexported fields
 		var fieldType = val.Type().Field(i)
 		if !fieldType.IsExported() {

@@ -3,3 +3,16 @@ coverage
 
 # not vendored code
 !vendor/**/*
+
+# environment variables
+.env
+.env.*
+
+# claude code
+.claude/*.lock
+
+# local linter config overlay
+.golangci.local.yaml
+
+# binaries
+bin/

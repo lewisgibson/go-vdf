@@ -1,6 +1,6 @@
 module github.com/lewisgibson/go-vdf
 
-go 1.24.4
+go 1.26.1
 
 require (
 	github.com/google/go-cmp v0.7.0
