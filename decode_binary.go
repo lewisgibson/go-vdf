@@ -63,7 +63,7 @@ func (d *BinaryDecoder) Decode(v any) error {
 func (d *BinaryDecoder) parseRoot() (*Node, error) {
 	var root = &Node{
 		Type:     NodeTypeMap,
-		Children: make(map[string]*Node),
+		Children: make(map[string][]*Node),
 	}
 	for {
 		tag, err := d.readByte()
@@ -91,7 +91,7 @@ func (d *BinaryDecoder) parseRoot() (*Node, error) {
 			return nil, fmt.Errorf("failed to parse root object %q: %w", key, err)
 		}
 
-		root.Children[key] = child
+		appendChild(root, key, child)
 	}
 }
 
@@ -99,7 +99,7 @@ func (d *BinaryDecoder) parseRoot() (*Node, error) {
 func (d *BinaryDecoder) parseObject() (*Node, error) {
 	var node = &Node{
 		Type:     NodeTypeMap,
-		Children: make(map[string]*Node),
+		Children: make(map[string][]*Node),
 	}
 	for {
 		tag, err := d.readByte()
@@ -122,42 +122,42 @@ func (d *BinaryDecoder) parseObject() (*Node, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse object %q: %w", key, err)
 			}
-			node.Children[key] = child
+			appendChild(node, key, child)
 
 		case binaryTypeString, binaryTypeWString:
 			value, err := d.readNullTerminatedString()
 			if err != nil {
 				return nil, fmt.Errorf("failed to read string value for %q: %w", key, err)
 			}
-			node.Children[key] = &Node{Type: NodeTypeScalar, Value: value}
+			appendChild(node, key, &Node{Type: NodeTypeScalar, Value: value})
 
 		case binaryTypeInt32, binaryTypeColor, binaryTypePointer:
 			var v int32
 			if err := binary.Read(d.reader, binary.LittleEndian, &v); err != nil {
 				return nil, fmt.Errorf("failed to read int32 value for %q: %w", key, err)
 			}
-			node.Children[key] = &Node{Type: NodeTypeScalar, Value: strconv.Itoa(int(v))}
+			appendChild(node, key, &Node{Type: NodeTypeScalar, Value: strconv.Itoa(int(v))})
 
 		case binaryTypeFloat32:
 			var v float32
 			if err := binary.Read(d.reader, binary.LittleEndian, &v); err != nil {
 				return nil, fmt.Errorf("failed to read float32 value for %q: %w", key, err)
 			}
-			node.Children[key] = &Node{Type: NodeTypeScalar, Value: fmt.Sprintf("%g", v)}
+			appendChild(node, key, &Node{Type: NodeTypeScalar, Value: fmt.Sprintf("%g", v)})
 
 		case binaryTypeUint64:
 			var v uint64
 			if err := binary.Read(d.reader, binary.LittleEndian, &v); err != nil {
 				return nil, fmt.Errorf("failed to read uint64 value for %q: %w", key, err)
 			}
-			node.Children[key] = &Node{Type: NodeTypeScalar, Value: strconv.FormatUint(v, 10)}
+			appendChild(node, key, &Node{Type: NodeTypeScalar, Value: strconv.FormatUint(v, 10)})
 
 		case binaryTypeInt64:
 			var v int64
 			if err := binary.Read(d.reader, binary.LittleEndian, &v); err != nil {
 				return nil, fmt.Errorf("failed to read int64 value for %q: %w", key, err)
 			}
-			node.Children[key] = &Node{Type: NodeTypeScalar, Value: strconv.FormatInt(v, 10)}
+			appendChild(node, key, &Node{Type: NodeTypeScalar, Value: strconv.FormatInt(v, 10)})
 
 		default:
 			return nil, fmt.Errorf("unknown binary VDF tag 0x%02X for key %q", tag, key)

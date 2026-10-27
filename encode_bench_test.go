@@ -74,33 +74,33 @@ func BenchmarkMarshal_ComplexStruct(b *testing.B) {
 func BenchmarkMarshal_Node(b *testing.B) {
 	node := &govdf.Node{
 		Type: govdf.NodeTypeMap,
-		Children: map[string]*govdf.Node{
-			"user": {
+		Children: map[string][]*govdf.Node{
+			"user": {{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"name": {
+				Children: map[string][]*govdf.Node{
+					"name": {{
 						Type:  govdf.NodeTypeScalar,
 						Value: "John Doe",
-					},
-					"age": {
+					}},
+					"age": {{
 						Type:  govdf.NodeTypeScalar,
 						Value: "30",
-					},
-					"address": {
+					}},
+					"address": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"street": {
+						Children: map[string][]*govdf.Node{
+							"street": {{
 								Type:  govdf.NodeTypeScalar,
 								Value: "123 Main St",
-							},
-							"city": {
+							}},
+							"city": {{
 								Type:  govdf.NodeTypeScalar,
 								Value: "Anytown",
-							},
+							}},
 						},
-					},
+					}},
 				},
-			},
+			}},
 		},
 	}
 
@@ -128,7 +128,7 @@ func BenchmarkMarshal_Parallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			_, err := govdf.Marshal(data)
-		require.NoError(b, err)
+			require.NoError(b, err)
 		}
 	})
 }

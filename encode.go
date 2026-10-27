@@ -150,67 +150,79 @@ func (e *Encoder) encodeMap(node *Node, indent int) error {
 
 	// Write each key-value pair
 	for _, key := range keys {
-		var child = node.Children[key]
-		if child == nil {
+		children := node.Children[key]
+		if len(children) == 0 {
 			continue
 		}
-
-		// Write head comment if present for this child
-		if child.HeadComment != "" {
-			if err := e.writeHeadComment(child.HeadComment, indent); err != nil {
-				return err
-			}
-		}
-
-		// Write the key
-		if err := e.writeIndent(indent); err != nil {
-			return err
-		}
-		if err := e.writeQuotedString(key); err != nil {
-			return err
-		}
-
-		// Write the value based on its type
-		switch child.Type {
-		case NodeTypeMap:
-			// Write opening brace
-			if _, err := e.w.Write([]byte(" {\n")); err != nil {
-				return err
-			}
-			// Write map contents
-			if err := e.encodeMap(child, indent+1); err != nil {
-				return err
-			}
-			// Write closing brace
-			if err := e.writeIndent(indent); err != nil {
-				return err
-			}
-			if _, err := e.w.Write([]byte("}\n")); err != nil {
-				return err
+		for _, child := range children {
+			if child == nil {
+				continue
 			}
 
-		case NodeTypeScalar:
-			// Write space before value
-			if _, err := e.w.Write([]byte(" ")); err != nil {
-				return err
-			}
-			// Write scalar value
-			if err := e.writeQuotedString(child.Value); err != nil {
-				return err
-			}
-			// Write line comment if present
-			if child.LineComment != "" {
-				if _, err := e.w.Write([]byte("\t// " + child.LineComment)); err != nil {
+			// Write head comment if present for this child
+			if child.HeadComment != "" {
+				if err := e.writeHeadComment(child.HeadComment, indent); err != nil {
 					return err
 				}
 			}
-			if _, err := e.w.Write([]byte("\n")); err != nil {
+
+			// Write the key
+			if err := e.writeIndent(indent); err != nil {
 				return err
+			}
+			if err := e.writeQuotedString(key); err != nil {
+				return err
+			}
+
+			// Write the value based on its type
+			switch child.Type {
+			case NodeTypeMap:
+				// Write opening brace
+				if _, err := e.w.Write([]byte(" {\n")); err != nil {
+					return err
+				}
+				// Write map contents
+				if err := e.encodeMap(child, indent+1); err != nil {
+					return err
+				}
+				// Write closing brace
+				if err := e.writeIndent(indent); err != nil {
+					return err
+				}
+				if _, err := e.w.Write([]byte("}\n")); err != nil {
+					return err
+				}
+
+			case NodeTypeScalar:
+				// Write space before value
+				if _, err := e.w.Write([]byte(" ")); err != nil {
+					return err
+				}
+				// Write scalar value
+				if err := e.writeQuotedString(child.Value); err != nil {
+					return err
+				}
+				// Write line comment if present
+				if child.LineComment != "" {
+					if _, err := e.w.Write([]byte("\t// " + child.LineComment)); err != nil {
+						return err
+					}
+				}
+				if _, err := e.w.Write([]byte("\n")); err != nil {
+					return err
+				}
 			}
 		}
 	}
 
 	return nil
+}
+
+func ensureChildren(m map[string][]*Node) map[string][]*Node {
+	if m == nil {
+		return make(map[string][]*Node)
+	}
+	return m
 }
 
 // encodeScalar writes a scalar node to the output stream.
@@ -306,7 +318,7 @@ func structToNode(v any) (*Node, error) {
 
 	node := &Node{
 		Type:     NodeTypeMap,
-		Children: make(map[string]*Node),
+		Children: make(map[string][]*Node),
 	}
 
 	// Process each field
@@ -337,7 +349,23 @@ func structToNode(v any) (*Node, error) {
 			return nil, err
 
 		case childNode != nil:
-			node.Children[fieldName] = childNode
+			node.Children = ensureChildren(node.Children)
+			node.Children[fieldName] = []*Node{childNode}
+			if val.Field(i).Kind() == reflect.Slice || val.Field(i).Kind() == reflect.Array {
+				node.Children[fieldName] = nil
+				for j := 0; j < val.Field(i).Len(); j++ {
+					n, e := valueToNode(val.Field(i).Index(j))
+					if e != nil {
+						return nil, e
+					}
+					if n != nil {
+						node.Children[fieldName] = append(node.Children[fieldName], n)
+					}
+				}
+				if len(node.Children[fieldName]) > 0 {
+					// first occurrence remains available through index zero
+				}
+			}
 		}
 	}
 
@@ -376,6 +404,14 @@ func valueToNode(val reflect.Value) (*Node, error) {
 	}
 
 	switch val.Kind() {
+	case reflect.Slice, reflect.Array:
+		// Slices are represented as repeated VDF keys. The caller currently
+		// stores the first node for compatibility; repeated encoding is handled
+		// by valueToNodes in encodeMap callers.
+		if val.Len() == 0 {
+			return nil, nil
+		}
+		return valueToNode(val.Index(0))
 	case reflect.Struct:
 		return structToNode(val.Interface())
 

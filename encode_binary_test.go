@@ -19,90 +19,90 @@ func TestEncodeBinary_Node(t *testing.T) {
 		"simple app info": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"appinfo": {
+				Children: map[string][]*govdf.Node{
+					"appinfo": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"appid": {Type: govdf.NodeTypeScalar, Value: "730"},
-							"name":  {Type: govdf.NodeTypeScalar, Value: "Counter-Strike 2"},
+						Children: map[string][]*govdf.Node{
+							"appid": {{Type: govdf.NodeTypeScalar, Value: "730"}},
+							"name":  {{Type: govdf.NodeTypeScalar, Value: "Counter-Strike 2"}},
 						},
-					},
+					}},
 				},
 			},
 			validate: func(t *testing.T, data []byte) {
 				var node govdf.Node
 				require.NoError(t, govdf.UnmarshalBinary(data, &node))
 				require.NotNil(t, node.Children["appinfo"])
-				require.Equal(t, "730", node.Children["appinfo"].Children["appid"].Value)
-				require.Equal(t, "Counter-Strike 2", node.Children["appinfo"].Children["name"].Value)
+				require.Equal(t, "730", node.Children["appinfo"][0].Children["appid"][0].Value)
+				require.Equal(t, "Counter-Strike 2", node.Children["appinfo"][0].Children["name"][0].Value)
 			},
 		},
 		"nested objects": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"appinfo": {
+				Children: map[string][]*govdf.Node{
+					"appinfo": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"common": {
+						Children: map[string][]*govdf.Node{
+							"common": {{
 								Type: govdf.NodeTypeMap,
-								Children: map[string]*govdf.Node{
-									"name": {Type: govdf.NodeTypeScalar, Value: "Counter-Strike 2"},
-									"type": {Type: govdf.NodeTypeScalar, Value: "Game"},
+								Children: map[string][]*govdf.Node{
+									"name": {{Type: govdf.NodeTypeScalar, Value: "Counter-Strike 2"}},
+									"type": {{Type: govdf.NodeTypeScalar, Value: "Game"}},
 								},
-							},
+							}},
 						},
-					},
+					}},
 				},
 			},
 			validate: func(t *testing.T, data []byte) {
 				var node govdf.Node
 				require.NoError(t, govdf.UnmarshalBinary(data, &node))
-				require.Equal(t, "Counter-Strike 2", node.Children["appinfo"].Children["common"].Children["name"].Value)
-				require.Equal(t, "Game", node.Children["appinfo"].Children["common"].Children["type"].Value)
+				require.Equal(t, "Counter-Strike 2", node.Children["appinfo"][0].Children["common"][0].Children["name"][0].Value)
+				require.Equal(t, "Game", node.Children["appinfo"][0].Children["common"][0].Children["type"][0].Value)
 			},
 		},
 		"integer values written as int32": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"appinfo": {
+				Children: map[string][]*govdf.Node{
+					"appinfo": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"reviewscore": {Type: govdf.NodeTypeScalar, Value: "8"},
+						Children: map[string][]*govdf.Node{
+							"reviewscore": {{Type: govdf.NodeTypeScalar, Value: "8"}},
 						},
-					},
+					}},
 				},
 			},
 			validate: func(t *testing.T, data []byte) {
 				require.Contains(t, string(data), "reviewscore")
 				var node govdf.Node
 				require.NoError(t, govdf.UnmarshalBinary(data, &node))
-				require.Equal(t, "8", node.Children["appinfo"].Children["reviewscore"].Value)
+				require.Equal(t, "8", node.Children["appinfo"][0].Children["reviewscore"][0].Value)
 			},
 		},
 		"non-integer string values": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"appinfo": {
+				Children: map[string][]*govdf.Node{
+					"appinfo": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"clienticon": {Type: govdf.NodeTypeScalar, Value: "324b323045b09bace182f928f4104dfcd93cb7f3"},
+						Children: map[string][]*govdf.Node{
+							"clienticon": {{Type: govdf.NodeTypeScalar, Value: "324b323045b09bace182f928f4104dfcd93cb7f3"}},
 						},
-					},
+					}},
 				},
 			},
 			validate: func(t *testing.T, data []byte) {
 				var node govdf.Node
 				require.NoError(t, govdf.UnmarshalBinary(data, &node))
-				require.Equal(t, "324b323045b09bace182f928f4104dfcd93cb7f3", node.Children["appinfo"].Children["clienticon"].Value)
+				require.Equal(t, "324b323045b09bace182f928f4104dfcd93cb7f3", node.Children["appinfo"][0].Children["clienticon"][0].Value)
 			},
 		},
 		"empty root": {
 			node: &govdf.Node{
 				Type:     govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{},
+				Children: map[string][]*govdf.Node{},
 			},
 			validate: func(t *testing.T, data []byte) {
 				require.Equal(t, []byte{0x08}, data)
@@ -111,26 +111,26 @@ func TestEncodeBinary_Node(t *testing.T) {
 		"multiple root objects": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"appinfo": {
+				Children: map[string][]*govdf.Node{
+					"appinfo": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"appid": {Type: govdf.NodeTypeScalar, Value: "730"},
+						Children: map[string][]*govdf.Node{
+							"appid": {{Type: govdf.NodeTypeScalar, Value: "730"}},
 						},
-					},
-					"packageinfo": {
+					}},
+					"packageinfo": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"packaged": {Type: govdf.NodeTypeScalar, Value: "303386"},
+						Children: map[string][]*govdf.Node{
+							"packaged": {{Type: govdf.NodeTypeScalar, Value: "303386"}},
 						},
-					},
+					}},
 				},
 			},
 			validate: func(t *testing.T, data []byte) {
 				var node govdf.Node
 				require.NoError(t, govdf.UnmarshalBinary(data, &node))
-				require.Equal(t, "730", node.Children["appinfo"].Children["appid"].Value)
-				require.Equal(t, "303386", node.Children["packageinfo"].Children["packaged"].Value)
+				require.Equal(t, "730", node.Children["appinfo"][0].Children["appid"][0].Value)
+				require.Equal(t, "303386", node.Children["packageinfo"][0].Children["packaged"][0].Value)
 			},
 		},
 	}
@@ -198,9 +198,9 @@ func TestEncodeBinary_Struct(t *testing.T) {
 
 	var node govdf.Node
 	require.NoError(t, govdf.UnmarshalBinary(data, &node))
-	require.Equal(t, "730", node.Children["appinfo"].Children["appid"].Value)
-	require.Equal(t, "Counter-Strike 2", node.Children["appinfo"].Children["common"].Children["name"].Value)
-	require.Equal(t, "Game", node.Children["appinfo"].Children["common"].Children["type"].Value)
+	require.Equal(t, "730", node.Children["appinfo"][0].Children["appid"][0].Value)
+	require.Equal(t, "Counter-Strike 2", node.Children["appinfo"][0].Children["common"][0].Children["name"][0].Value)
+	require.Equal(t, "Game", node.Children["appinfo"][0].Children["common"][0].Children["type"][0].Value)
 }
 
 func TestEncodeBinary_Roundtrip(t *testing.T) {
@@ -212,9 +212,9 @@ func TestEncodeBinary_Roundtrip(t *testing.T) {
 	writeObject(&original, "common")
 	writeString(&original, "name", "Counter-Strike 2")
 	writeString(&original, "type", "Game")
-	writeEnd(&original) // end common
-	writeEnd(&original) // end appinfo
-	writeEnd(&original) // end root
+	writeEnd(&original)
+	writeEnd(&original)
+	writeEnd(&original)
 
 	var node govdf.Node
 	require.NoError(t, govdf.UnmarshalBinary(original.Bytes(), &node))
@@ -224,8 +224,8 @@ func TestEncodeBinary_Roundtrip(t *testing.T) {
 
 	var decoded govdf.Node
 	require.NoError(t, govdf.UnmarshalBinary(encoded, &decoded))
-	require.Equal(t, node.Children["appinfo"].Children["appid"].Value, decoded.Children["appinfo"].Children["appid"].Value)
-	require.Equal(t, node.Children["appinfo"].Children["common"].Children["name"].Value, decoded.Children["appinfo"].Children["common"].Children["name"].Value)
+	require.Equal(t, node.Children["appinfo"][0].Children["appid"][0].Value, decoded.Children["appinfo"][0].Children["appid"][0].Value)
+	require.Equal(t, node.Children["appinfo"][0].Children["common"][0].Children["name"][0].Value, decoded.Children["appinfo"][0].Children["common"][0].Children["name"][0].Value)
 }
 
 func TestEncodeBinary_Encoder(t *testing.T) {
@@ -233,13 +233,13 @@ func TestEncodeBinary_Encoder(t *testing.T) {
 
 	node := &govdf.Node{
 		Type: govdf.NodeTypeMap,
-		Children: map[string]*govdf.Node{
-			"appinfo": {
+		Children: map[string][]*govdf.Node{
+			"appinfo": {{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"appid": {Type: govdf.NodeTypeScalar, Value: "730"},
+				Children: map[string][]*govdf.Node{
+					"appid": {{Type: govdf.NodeTypeScalar, Value: "730"}},
 				},
-			},
+			}},
 		},
 	}
 
@@ -249,7 +249,7 @@ func TestEncodeBinary_Encoder(t *testing.T) {
 
 	var decoded govdf.Node
 	require.NoError(t, govdf.UnmarshalBinary(buf.Bytes(), &decoded))
-	require.Equal(t, "730", decoded.Children["appinfo"].Children["appid"].Value)
+	require.Equal(t, "730", decoded.Children["appinfo"][0].Children["appid"][0].Value)
 }
 
 func TestEncodeBinary_WriterErrors(t *testing.T) {
@@ -263,84 +263,84 @@ func TestEncodeBinary_WriterErrors(t *testing.T) {
 		"encodeObject end tag write error": {
 			node: &govdf.Node{
 				Type:     govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{},
+				Children: map[string][]*govdf.Node{},
 			},
 		},
 		"writeObjectTag type byte write error": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"child": {
+				Children: map[string][]*govdf.Node{
+					"child": {{
 						Type:     govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{},
-					},
+						Children: map[string][]*govdf.Node{},
+					}},
 				},
 			},
 		},
 		"writeObjectTag key write error": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"child": {
+				Children: map[string][]*govdf.Node{
+					"child": {{
 						Type:     govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{},
-					},
+						Children: map[string][]*govdf.Node{},
+					}},
 				},
 			},
 		},
 		"writeString type byte write error": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "non-integer-value"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "non-integer-value"}},
 				},
 			},
 		},
 		"writeString key write error": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "non-integer-value"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "non-integer-value"}},
 				},
 			},
 		},
 		"writeString value write error": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "non-integer-value"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "non-integer-value"}},
 				},
 			},
 		},
 		"writeInt32 type byte write error": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "42"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "42"}},
 				},
 			},
 		},
 		"writeInt32 key write error": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "42"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "42"}},
 				},
 			},
 		},
 		"writeInt32 value write error": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "42"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "42"}},
 				},
 			},
 		},
 		"writeNullTerminatedString null byte write error": {
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "value"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "value"}},
 				},
 			},
 		},
@@ -370,8 +370,8 @@ func TestEncodeBinary_WriterErrorsDeep(t *testing.T) {
 			failAfter: 2,
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "not-a-number"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "not-a-number"}},
 				},
 			},
 		},
@@ -379,8 +379,8 @@ func TestEncodeBinary_WriterErrorsDeep(t *testing.T) {
 			failAfter: 3,
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "not-a-number"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "not-a-number"}},
 				},
 			},
 		},
@@ -388,8 +388,8 @@ func TestEncodeBinary_WriterErrorsDeep(t *testing.T) {
 			failAfter: 4,
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "not-a-number"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "not-a-number"}},
 				},
 			},
 		},
@@ -397,8 +397,8 @@ func TestEncodeBinary_WriterErrorsDeep(t *testing.T) {
 			failAfter: 2,
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "42"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "42"}},
 				},
 			},
 		},
@@ -406,8 +406,8 @@ func TestEncodeBinary_WriterErrorsDeep(t *testing.T) {
 			failAfter: 3,
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key": {Type: govdf.NodeTypeScalar, Value: "42"},
+				Children: map[string][]*govdf.Node{
+					"key": {{Type: govdf.NodeTypeScalar, Value: "42"}},
 				},
 			},
 		},
@@ -415,13 +415,13 @@ func TestEncodeBinary_WriterErrorsDeep(t *testing.T) {
 			failAfter: 2,
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"child": {
+				Children: map[string][]*govdf.Node{
+					"child": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"key": {Type: govdf.NodeTypeScalar, Value: "v"},
+						Children: map[string][]*govdf.Node{
+							"key": {{Type: govdf.NodeTypeScalar, Value: "v"}},
 						},
-					},
+					}},
 				},
 			},
 		},
@@ -429,13 +429,13 @@ func TestEncodeBinary_WriterErrorsDeep(t *testing.T) {
 			failAfter: 5,
 			node: &govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"child": {
+				Children: map[string][]*govdf.Node{
+					"child": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"key": {Type: govdf.NodeTypeScalar, Value: "v"},
+						Children: map[string][]*govdf.Node{
+							"key": {{Type: govdf.NodeTypeScalar, Value: "v"}},
 						},
-					},
+					}},
 				},
 			},
 		},
@@ -483,10 +483,10 @@ func TestEncodeBinary_UnknownNodeType(t *testing.T) {
 
 	node := &govdf.Node{
 		Type: govdf.NodeTypeMap,
-		Children: map[string]*govdf.Node{
-			"child": {
+		Children: map[string][]*govdf.Node{
+			"child": {{
 				Type: govdf.NodeType(99),
-			},
+			}},
 		},
 	}
 

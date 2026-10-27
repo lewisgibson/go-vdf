@@ -110,7 +110,7 @@ func (d *Decoder) parse() (*Node, error) {
 		Type:     NodeTypeMap,
 		Line:     1,
 		Column:   1,
-		Children: make(map[string]*Node),
+		Children: make(map[string][]*Node),
 	}
 
 	// Parse the input
@@ -168,19 +168,19 @@ func (d *Decoder) processRune(r rune, stack *[]*Node, currentKey *string, headCo
 
 		var current = (*stack)[len(*stack)-1]
 		if current.Children == nil {
-			current.Children = make(map[string]*Node)
+			current.Children = make(map[string][]*Node)
 		}
 
 		// Reuse existing map node to merge children from duplicate keys
-		var newNode, ok = current.Children[*currentKey]
-		if !ok || newNode.Type != NodeTypeMap {
+		var newNode *Node
+		{
 			newNode = &Node{
 				Type:        NodeTypeMap,
 				Column:      d.column - 1, // Position of the '{' character
 				Line:        d.line,
 				HeadComment: strings.TrimSpace(*headComment),
 			}
-			current.Children[*currentKey] = newNode
+			appendChild(current, *currentKey, newNode)
 		}
 
 		*stack = append(*stack, newNode)
@@ -332,17 +332,17 @@ func (d *Decoder) readValue(stack *[]*Node, currentKey *string, headComment *str
 
 			var current = (*stack)[len(*stack)-1]
 			if current.Children == nil {
-				current.Children = make(map[string]*Node)
+				current.Children = make(map[string][]*Node)
 			}
 
-			current.Children[*currentKey] = &Node{
+			appendChild(current, *currentKey, &Node{
 				Type:        NodeTypeScalar,
 				Value:       value,
 				Column:      d.column - len(value) - 3 - strings.Count(value, "\""),
 				Line:        d.line,
 				HeadComment: strings.TrimSpace(*headComment),
 				LineComment: lineComment,
-			}
+			})
 
 			// Reset for next key-value pair
 			*currentKey = ""
@@ -409,7 +409,11 @@ func mapNodeToStruct(node *Node, target any) error {
 
 	// Build a map of field names to field info for efficient lookup.
 	var fieldMap = buildFieldMap(targetValue.Type())
-	for key, child := range node.Children {
+	for key, children := range node.Children {
+		if len(children) == 0 {
+			continue
+		}
+		child := children[len(children)-1]
 		var fieldInfo, exists = fieldMap[key]
 		if !exists {
 			// Try case-insensitive match.
@@ -427,6 +431,25 @@ func mapNodeToStruct(node *Node, target any) error {
 
 		var field = targetValue.FieldByIndex(fieldInfo.Index)
 		if !field.CanSet() {
+			continue
+		}
+		// A slice field receives all occurrences of the VDF key in input order.
+		if field.Kind() == reflect.Slice {
+			nodes := node.Children[key]
+			if len(nodes) == 0 {
+				nodes = []*Node{child}
+			}
+			for _, n := range nodes {
+				elem := reflect.New(field.Type().Elem()).Elem()
+				if n.Type == NodeTypeScalar {
+					if err := setScalarValue(elem, n.Value); err != nil {
+						return err
+					}
+				} else if err := setMapValue(elem, n); err != nil {
+					return err
+				}
+				field.Set(reflect.Append(field, elem))
+			}
 			continue
 		}
 
