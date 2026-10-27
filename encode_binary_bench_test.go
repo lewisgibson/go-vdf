@@ -10,14 +10,14 @@ import (
 func BenchmarkMarshalBinary_Simple(b *testing.B) {
 	node := &govdf.Node{
 		Type: govdf.NodeTypeMap,
-		Children: map[string]*govdf.Node{
-			"appinfo": {
+		Children: map[string][]*govdf.Node{
+			"appinfo": {{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"appid": {Type: govdf.NodeTypeScalar, Value: "730"},
-					"name":  {Type: govdf.NodeTypeScalar, Value: "Counter-Strike 2"},
+				Children: map[string][]*govdf.Node{
+					"appid": {{Type: govdf.NodeTypeScalar, Value: "730"}},
+					"name":  {{Type: govdf.NodeTypeScalar, Value: "Counter-Strike 2"}},
 				},
-			},
+			}},
 		},
 	}
 
@@ -29,51 +29,51 @@ func BenchmarkMarshalBinary_Simple(b *testing.B) {
 }
 
 func BenchmarkMarshalBinary_Complex(b *testing.B) {
-	var languages = make(map[string]*govdf.Node)
+	var languages = make(map[string][]*govdf.Node)
 	for _, lang := range []string{"english", "german", "french", "italian", "koreana", "spanish", "schinese", "tchinese", "russian", "thai", "japanese", "portuguese", "polish", "danish", "dutch", "finnish", "norwegian", "swedish", "hungarian", "czech", "romanian", "turkish", "brazilian", "bulgarian", "greek", "ukrainian", "latam", "vietnamese", "indonesian"} {
-		languages[lang] = &govdf.Node{Type: govdf.NodeTypeScalar, Value: "1"}
+		languages[lang] = []*govdf.Node{{Type: govdf.NodeTypeScalar, Value: "1"}}
 	}
 
-	var depots = make(map[string]*govdf.Node)
+	var depots = make(map[string][]*govdf.Node)
 	for _, depot := range []string{"731", "732", "733", "734", "735"} {
-		depots[depot] = &govdf.Node{
+		depots[depot] = []*govdf.Node{{
 			Type: govdf.NodeTypeMap,
-			Children: map[string]*govdf.Node{
-				"manifests": {
+			Children: map[string][]*govdf.Node{
+				"manifests": {{
 					Type: govdf.NodeTypeMap,
-					Children: map[string]*govdf.Node{
-						"public": {
+					Children: map[string][]*govdf.Node{
+						"public": {{
 							Type: govdf.NodeTypeMap,
-							Children: map[string]*govdf.Node{
-								"gid":  {Type: govdf.NodeTypeScalar, Value: "7908178339897559225"},
-								"size": {Type: govdf.NodeTypeScalar, Value: "42949672960"},
+							Children: map[string][]*govdf.Node{
+								"gid":  {{Type: govdf.NodeTypeScalar, Value: "7908178339897559225"}},
+								"size": {{Type: govdf.NodeTypeScalar, Value: "42949672960"}},
 							},
-						},
+						}},
 					},
-				},
+				}},
 			},
-		}
+		}}
 	}
 
 	node := &govdf.Node{
 		Type: govdf.NodeTypeMap,
-		Children: map[string]*govdf.Node{
-			"appinfo": {
+		Children: map[string][]*govdf.Node{
+			"appinfo": {{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"appid": {Type: govdf.NodeTypeScalar, Value: "730"},
-					"common": {
+				Children: map[string][]*govdf.Node{
+					"appid": {{Type: govdf.NodeTypeScalar, Value: "730"}},
+					"common": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"name":       {Type: govdf.NodeTypeScalar, Value: "Counter-Strike 2"},
-							"type":       {Type: govdf.NodeTypeScalar, Value: "Game"},
-							"clienticon": {Type: govdf.NodeTypeScalar, Value: "324b323045b09bace182f928f4104dfcd93cb7f3"},
-							"languages":  {Type: govdf.NodeTypeMap, Children: languages},
+						Children: map[string][]*govdf.Node{
+							"name":       {{Type: govdf.NodeTypeScalar, Value: "Counter-Strike 2"}},
+							"type":       {{Type: govdf.NodeTypeScalar, Value: "Game"}},
+							"clienticon": {{Type: govdf.NodeTypeScalar, Value: "324b323045b09bace182f928f4104dfcd93cb7f3"}},
+							"languages":  {{Type: govdf.NodeTypeMap, Children: languages}},
 						},
-					},
-					"depots": {Type: govdf.NodeTypeMap, Children: depots},
+					}},
+					"depots": {{Type: govdf.NodeTypeMap, Children: depots}},
 				},
-			},
+			}},
 		},
 	}
 

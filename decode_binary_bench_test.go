@@ -33,8 +33,8 @@ func buildComplexBinaryVDF() []byte {
 	for _, lang := range []string{"english", "german", "french", "italian", "koreana", "spanish", "schinese", "tchinese", "russian", "thai", "japanese", "portuguese", "polish", "danish", "dutch", "finnish", "norwegian", "swedish", "hungarian", "czech", "romanian", "turkish", "brazilian", "bulgarian", "greek", "ukrainian", "latam", "vietnamese", "indonesian"} {
 		writeString(&buf, lang, "1")
 	}
-	writeEnd(&buf) // languages
-	writeEnd(&buf) // common
+	writeEnd(&buf)
+	writeEnd(&buf)
 	writeObject(&buf, "depots")
 	for _, depot := range []string{"731", "732", "733", "734", "735"} {
 		writeObject(&buf, depot)
@@ -42,13 +42,13 @@ func buildComplexBinaryVDF() []byte {
 		writeObject(&buf, "public")
 		writeString(&buf, "gid", "7908178339897559225")
 		writeString(&buf, "size", "42949672960")
-		writeEnd(&buf) // public
-		writeEnd(&buf) // manifests
-		writeEnd(&buf) // depot
+		writeEnd(&buf)
+		writeEnd(&buf)
+		writeEnd(&buf)
 	}
-	writeEnd(&buf) // depots
-	writeEnd(&buf) // appinfo
-	writeEnd(&buf) // root
+	writeEnd(&buf)
+	writeEnd(&buf)
+	writeEnd(&buf)
 	return buf.Bytes()
 }
 

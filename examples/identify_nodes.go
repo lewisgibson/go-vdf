@@ -46,10 +46,12 @@ func main() {
 
 			// Add the children to the stack.
 			for key, child := range current.node.Children {
-				stack = append(stack, &traversal{
-					keys: append(append([]string{}, current.keys...), key),
-					node: child,
-				})
+				for _, childNode := range child {
+					stack = append(stack, &traversal{
+						keys: append(append([]string{}, current.keys...), key),
+						node: childNode,
+					})
+				}
 			}
 		} else {
 			fmt.Printf("Scalar node at line %d, column %d: %s -> %s\n", current.node.Line, current.node.Column, strings.Join(current.keys, "."), current.node.Value)

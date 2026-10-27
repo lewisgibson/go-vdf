@@ -9,15 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// writeBinaryVDF helpers for building test data.
 func writeObject(buf *bytes.Buffer, key string) {
-	buf.WriteByte(0x00) // object tag
+	buf.WriteByte(0x00)
 	buf.WriteString(key)
-	buf.WriteByte(0x00) // null terminator
+	buf.WriteByte(0x00)
 }
 
 func writeString(buf *bytes.Buffer, key, value string) {
-	buf.WriteByte(0x01) // string tag
+	buf.WriteByte(0x01)
 	buf.WriteString(key)
 	buf.WriteByte(0x00)
 	buf.WriteString(value)
@@ -25,35 +24,35 @@ func writeString(buf *bytes.Buffer, key, value string) {
 }
 
 func writeInt32(buf *bytes.Buffer, key string, value int32) {
-	buf.WriteByte(0x02) // int32 tag
+	buf.WriteByte(0x02)
 	buf.WriteString(key)
 	buf.WriteByte(0x00)
 	binary.Write(buf, binary.LittleEndian, value)
 }
 
 func writeUint64(buf *bytes.Buffer, key string, value uint64) {
-	buf.WriteByte(0x07) // uint64 tag
+	buf.WriteByte(0x07)
 	buf.WriteString(key)
 	buf.WriteByte(0x00)
 	binary.Write(buf, binary.LittleEndian, value)
 }
 
 func writeFloat32(buf *bytes.Buffer, key string, value float32) {
-	buf.WriteByte(0x03) // float32 tag
+	buf.WriteByte(0x03)
 	buf.WriteString(key)
 	buf.WriteByte(0x00)
 	binary.Write(buf, binary.LittleEndian, value)
 }
 
 func writeInt64(buf *bytes.Buffer, key string, value int64) {
-	buf.WriteByte(0x0A) // int64 tag
+	buf.WriteByte(0x0A)
 	buf.WriteString(key)
 	buf.WriteByte(0x00)
 	binary.Write(buf, binary.LittleEndian, value)
 }
 
 func writeEnd(buf *bytes.Buffer) {
-	buf.WriteByte(0x08) // end tag
+	buf.WriteByte(0x08)
 }
 
 func buildAppInfoBinaryVDF() []byte {
@@ -61,8 +60,8 @@ func buildAppInfoBinaryVDF() []byte {
 	writeObject(&buf, "appinfo")
 	writeString(&buf, "appid", "730")
 	writeString(&buf, "name", "Counter-Strike 2")
-	writeEnd(&buf) // end appinfo
-	writeEnd(&buf) // end root
+	writeEnd(&buf)
+	writeEnd(&buf)
 	return buf.Bytes()
 }
 
@@ -77,8 +76,8 @@ func TestDecodeBinary_Node(t *testing.T) {
 			input: buildAppInfoBinaryVDF,
 			validate: func(t *testing.T, node govdf.Node) {
 				require.NotNil(t, node.Children["appinfo"])
-				require.Equal(t, "730", node.Children["appinfo"].Children["appid"].Value)
-				require.Equal(t, "Counter-Strike 2", node.Children["appinfo"].Children["name"].Value)
+				require.Equal(t, "730", node.Children["appinfo"][0].Children["appid"][0].Value)
+				require.Equal(t, "Counter-Strike 2", node.Children["appinfo"][0].Children["name"][0].Value)
 			},
 		},
 		"nested objects": {
@@ -88,16 +87,16 @@ func TestDecodeBinary_Node(t *testing.T) {
 				writeObject(&buf, "common")
 				writeString(&buf, "name", "Counter-Strike 2")
 				writeString(&buf, "type", "Game")
-				writeEnd(&buf) // end common
-				writeEnd(&buf) // end appinfo
-				writeEnd(&buf) // end root
+				writeEnd(&buf)
+				writeEnd(&buf)
+				writeEnd(&buf)
 				return buf.Bytes()
 			},
 			validate: func(t *testing.T, node govdf.Node) {
 				require.NotNil(t, node.Children["appinfo"])
-				require.NotNil(t, node.Children["appinfo"].Children["common"])
-				require.Equal(t, "Counter-Strike 2", node.Children["appinfo"].Children["common"].Children["name"].Value)
-				require.Equal(t, "Game", node.Children["appinfo"].Children["common"].Children["type"].Value)
+				require.NotNil(t, node.Children["appinfo"][0].Children["common"])
+				require.Equal(t, "Counter-Strike 2", node.Children["appinfo"][0].Children["common"][0].Children["name"][0].Value)
+				require.Equal(t, "Game", node.Children["appinfo"][0].Children["common"][0].Children["type"][0].Value)
 			},
 		},
 		"int32 value": {
@@ -110,7 +109,7 @@ func TestDecodeBinary_Node(t *testing.T) {
 				return buf.Bytes()
 			},
 			validate: func(t *testing.T, node govdf.Node) {
-				require.Equal(t, "8", node.Children["appinfo"].Children["reviewscore"].Value)
+				require.Equal(t, "8", node.Children["appinfo"][0].Children["reviewscore"][0].Value)
 			},
 		},
 		"uint64 value": {
@@ -123,14 +122,14 @@ func TestDecodeBinary_Node(t *testing.T) {
 				return buf.Bytes()
 			},
 			validate: func(t *testing.T, node govdf.Node) {
-				require.Equal(t, "76561198065346589", node.Children["appinfo"].Children["steamid"].Value)
+				require.Equal(t, "76561198065346589", node.Children["appinfo"][0].Children["steamid"][0].Value)
 			},
 		},
 		"float32 value": {
 			input: func() []byte {
 				var buf bytes.Buffer
 				writeObject(&buf, "appinfo")
-				buf.WriteByte(0x03) // float32 tag
+				buf.WriteByte(0x03)
 				buf.WriteString("controller_support")
 				buf.WriteByte(0x00)
 				binary.Write(&buf, binary.LittleEndian, float32(3.14))
@@ -139,7 +138,7 @@ func TestDecodeBinary_Node(t *testing.T) {
 				return buf.Bytes()
 			},
 			validate: func(t *testing.T, node govdf.Node) {
-				require.Contains(t, node.Children["appinfo"].Children["controller_support"].Value, "3.14")
+				require.Contains(t, node.Children["appinfo"][0].Children["controller_support"][0].Value, "3.14")
 			},
 		},
 		"int64 value": {
@@ -152,14 +151,14 @@ func TestDecodeBinary_Node(t *testing.T) {
 				return buf.Bytes()
 			},
 			validate: func(t *testing.T, node govdf.Node) {
-				require.Equal(t, "-9876543210", node.Children["appinfo"].Children["last_update"].Value)
+				require.Equal(t, "-9876543210", node.Children["appinfo"][0].Children["last_update"][0].Value)
 			},
 		},
 		"color value": {
 			input: func() []byte {
 				var buf bytes.Buffer
 				writeObject(&buf, "appinfo")
-				buf.WriteByte(0x06) // color tag
+				buf.WriteByte(0x06)
 				buf.WriteString("clienttga")
 				buf.WriteByte(0x00)
 				binary.Write(&buf, binary.LittleEndian, int32(0xFF0000))
@@ -168,14 +167,14 @@ func TestDecodeBinary_Node(t *testing.T) {
 				return buf.Bytes()
 			},
 			validate: func(t *testing.T, node govdf.Node) {
-				require.Equal(t, "16711680", node.Children["appinfo"].Children["clienttga"].Value)
+				require.Equal(t, "16711680", node.Children["appinfo"][0].Children["clienttga"][0].Value)
 			},
 		},
 		"pointer value": {
 			input: func() []byte {
 				var buf bytes.Buffer
 				writeObject(&buf, "appinfo")
-				buf.WriteByte(0x04) // pointer tag
+				buf.WriteByte(0x04)
 				buf.WriteString("header_image")
 				buf.WriteByte(0x00)
 				binary.Write(&buf, binary.LittleEndian, int32(12345))
@@ -184,14 +183,14 @@ func TestDecodeBinary_Node(t *testing.T) {
 				return buf.Bytes()
 			},
 			validate: func(t *testing.T, node govdf.Node) {
-				require.Equal(t, "12345", node.Children["appinfo"].Children["header_image"].Value)
+				require.Equal(t, "12345", node.Children["appinfo"][0].Children["header_image"][0].Value)
 			},
 		},
 		"wstring value": {
 			input: func() []byte {
 				var buf bytes.Buffer
 				writeObject(&buf, "appinfo")
-				buf.WriteByte(0x05) // wstring tag
+				buf.WriteByte(0x05)
 				buf.WriteString("localized_name")
 				buf.WriteByte(0x00)
 				buf.WriteString("Counter-Strike 2")
@@ -201,7 +200,7 @@ func TestDecodeBinary_Node(t *testing.T) {
 				return buf.Bytes()
 			},
 			validate: func(t *testing.T, node govdf.Node) {
-				require.Equal(t, "Counter-Strike 2", node.Children["appinfo"].Children["localized_name"].Value)
+				require.Equal(t, "Counter-Strike 2", node.Children["appinfo"][0].Children["localized_name"][0].Value)
 			},
 		},
 		"empty object": {
@@ -233,8 +232,8 @@ func TestDecodeBinary_Node(t *testing.T) {
 				return buf.Bytes()
 			},
 			validate: func(t *testing.T, node govdf.Node) {
-				require.Equal(t, "730", node.Children["appinfo"].Children["appid"].Value)
-				require.Equal(t, "303386", node.Children["packageinfo"].Children["packaged"].Value)
+				require.Equal(t, "730", node.Children["appinfo"][0].Children["appid"][0].Value)
+				require.Equal(t, "303386", node.Children["packageinfo"][0].Children["packaged"][0].Value)
 			},
 		},
 	}
@@ -281,7 +280,7 @@ func TestDecodeBinary_ErrorHandling(t *testing.T) {
 				var buf bytes.Buffer
 				writeObject(&buf, "appinfo")
 				writeString(&buf, "key", "value")
-				// missing writeEnd
+
 				return buf.Bytes()
 			},
 			expectedErr: "failed to read tag",
@@ -320,9 +319,9 @@ func TestDecodeBinary_Struct(t *testing.T) {
 	writeObject(&buf, "common")
 	writeString(&buf, "name", "Counter-Strike 2")
 	writeString(&buf, "type", "Game")
-	writeEnd(&buf) // end common
-	writeEnd(&buf) // end appinfo
-	writeEnd(&buf) // end root
+	writeEnd(&buf)
+	writeEnd(&buf)
+	writeEnd(&buf)
 
 	var root Root
 	err := govdf.UnmarshalBinary(buf.Bytes(), &root)
@@ -345,5 +344,5 @@ func TestDecodeBinary_Decoder(t *testing.T) {
 	var node govdf.Node
 	err := decoder.Decode(&node)
 	require.NoError(t, err)
-	require.Equal(t, "730", node.Children["appinfo"].Children["appid"].Value)
+	require.Equal(t, "730", node.Children["appinfo"][0].Children["appid"][0].Value)
 }

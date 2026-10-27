@@ -13,9 +13,8 @@ import (
 func TestNode_TypeConstants(t *testing.T) {
 	t.Parallel()
 
-	// Assert: The node type constants should not change.
-	assert.Equalf(t, govdf.NodeType(0), govdf.NodeTypeMap, "This value should not be changed")    //nolint:testifylint // The values are in the correct order.
-	assert.Equalf(t, govdf.NodeType(1), govdf.NodeTypeScalar, "This value should not be changed") //nolint:testifylint // The values are in the correct order.
+	assert.Equalf(t, govdf.NodeType(0), govdf.NodeTypeMap, "This value should not be changed")
+	assert.Equalf(t, govdf.NodeType(1), govdf.NodeTypeScalar, "This value should not be changed")
 }
 
 func TestNode_MarshalJSON(t *testing.T) {
@@ -28,9 +27,9 @@ func TestNode_MarshalJSON(t *testing.T) {
 		"map node": {
 			node: govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"name": {Type: govdf.NodeTypeScalar, Value: "John"},
-					"age":  {Type: govdf.NodeTypeScalar, Value: "30"},
+				Children: map[string][]*govdf.Node{
+					"name": {{Type: govdf.NodeTypeScalar, Value: "John"}},
+					"age":  {{Type: govdf.NodeTypeScalar, Value: "30"}},
 				},
 			},
 			expected: `{"age":"30","name":"John"}`,
@@ -45,7 +44,7 @@ func TestNode_MarshalJSON(t *testing.T) {
 		"empty map": {
 			node: govdf.Node{
 				Type:     govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{},
+				Children: map[string][]*govdf.Node{},
 			},
 			expected: `{}`,
 		},
@@ -59,14 +58,14 @@ func TestNode_MarshalJSON(t *testing.T) {
 		"nested map": {
 			node: govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"user": {
+				Children: map[string][]*govdf.Node{
+					"user": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"name": {Type: govdf.NodeTypeScalar, Value: "Jane"},
-							"age":  {Type: govdf.NodeTypeScalar, Value: "25"},
+						Children: map[string][]*govdf.Node{
+							"name": {{Type: govdf.NodeTypeScalar, Value: "Jane"}},
+							"age":  {{Type: govdf.NodeTypeScalar, Value: "25"}},
 						},
-					},
+					}},
 				},
 			},
 			expected: `{"user":{"age":"25","name":"Jane"}}`,
@@ -90,11 +89,9 @@ func TestNode_MarshalJSON(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			// Act: Marshal the node into JSON.
 			bytes, err := json.Marshal(tc.node)
 			require.NoError(t, err)
 
-			// Assert: The node should match the expected node.
 			require.Equal(t, tc.expected, string(bytes))
 		})
 	}
@@ -111,9 +108,9 @@ func TestNode_UnmarshalJSON(t *testing.T) {
 			input: `{"name": "John", "age": 30}`,
 			expected: govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"name": {Type: govdf.NodeTypeScalar, Value: "John"},
-					"age":  {Type: govdf.NodeTypeScalar, Value: "30"},
+				Children: map[string][]*govdf.Node{
+					"name": {{Type: govdf.NodeTypeScalar, Value: "John"}},
+					"age":  {{Type: govdf.NodeTypeScalar, Value: "30"}},
 				},
 			},
 		},
@@ -121,19 +118,19 @@ func TestNode_UnmarshalJSON(t *testing.T) {
 			input: `{"user": {"name": "Jane", "details": {"age": 25}}}`,
 			expected: govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"user": {
+				Children: map[string][]*govdf.Node{
+					"user": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"name": {Type: govdf.NodeTypeScalar, Value: "Jane"},
-							"details": {
+						Children: map[string][]*govdf.Node{
+							"name": {{Type: govdf.NodeTypeScalar, Value: "Jane"}},
+							"details": {{
 								Type: govdf.NodeTypeMap,
-								Children: map[string]*govdf.Node{
-									"age": {Type: govdf.NodeTypeScalar, Value: "25"},
+								Children: map[string][]*govdf.Node{
+									"age": {{Type: govdf.NodeTypeScalar, Value: "25"}},
 								},
-							},
+							}},
 						},
-					},
+					}},
 				},
 			},
 		},
@@ -148,7 +145,7 @@ func TestNode_UnmarshalJSON(t *testing.T) {
 			input: `{}`,
 			expected: govdf.Node{
 				Type:     govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{},
+				Children: map[string][]*govdf.Node{},
 			},
 		},
 		"empty string": {
@@ -162,7 +159,7 @@ func TestNode_UnmarshalJSON(t *testing.T) {
 			input: `null`,
 			expected: govdf.Node{
 				Type:     govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{},
+				Children: map[string][]*govdf.Node{},
 			},
 		},
 	}
@@ -170,11 +167,9 @@ func TestNode_UnmarshalJSON(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			// Act: Unmarshal the input into a node.
 			node := govdf.Node{}
 			require.NoError(t, json.Unmarshal([]byte(tc.input), &node))
 
-			// Assert: The node should match the expected node.
 			require.Equal(t, tc.expected, node)
 		})
 	}
@@ -191,21 +186,21 @@ func TestNode_JSONEdgeCases(t *testing.T) {
 			input: `{invalid json}`,
 			expected: govdf.Node{
 				Type:     govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{},
+				Children: map[string][]*govdf.Node{},
 			},
 		},
 		"null value": {
 			input: `null`,
 			expected: govdf.Node{
 				Type:     govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{},
+				Children: map[string][]*govdf.Node{},
 			},
 		},
 		"empty object": {
 			input: `{}`,
 			expected: govdf.Node{
 				Type:     govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{},
+				Children: map[string][]*govdf.Node{},
 			},
 		},
 		"empty string": {
@@ -233,23 +228,23 @@ func TestNode_JSONEdgeCases(t *testing.T) {
 			input: `{"level1": {"level2": {"level3": {"level4": "deep value"}}}}`,
 			expected: govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"level1": {
+				Children: map[string][]*govdf.Node{
+					"level1": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"level2": {
+						Children: map[string][]*govdf.Node{
+							"level2": {{
 								Type: govdf.NodeTypeMap,
-								Children: map[string]*govdf.Node{
-									"level3": {
+								Children: map[string][]*govdf.Node{
+									"level3": {{
 										Type: govdf.NodeTypeMap,
-										Children: map[string]*govdf.Node{
-											"level4": {Type: govdf.NodeTypeScalar, Value: "deep value"},
+										Children: map[string][]*govdf.Node{
+											"level4": {{Type: govdf.NodeTypeScalar, Value: "deep value"}},
 										},
-									},
+									}},
 								},
-							},
+							}},
 						},
-					},
+					}},
 				},
 			},
 		},
@@ -281,7 +276,7 @@ func TestNode_MarshalJSONEdgeCases(t *testing.T) {
 	}{
 		"unknown node type": {
 			node: govdf.Node{
-				Type: govdf.NodeType(99), // Invalid node type
+				Type: govdf.NodeType(99),
 			},
 			expected: `null`,
 		},
@@ -330,17 +325,17 @@ func TestNode_MarshalJSONEdgeCases(t *testing.T) {
 		"map with empty children": {
 			node: govdf.Node{
 				Type:     govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{},
+				Children: map[string][]*govdf.Node{},
 			},
 			expected: `{}`,
 		},
 		"map with nil child": {
 			node: govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"key":  {Type: govdf.NodeTypeScalar, Value: "value"},
+				Children: map[string][]*govdf.Node{
+					"key":  {{Type: govdf.NodeTypeScalar, Value: "value"}},
 					"nil":  nil,
-					"key2": {Type: govdf.NodeTypeScalar, Value: "value2"},
+					"key2": {{Type: govdf.NodeTypeScalar, Value: "value2"}},
 				},
 			},
 			expected: `{"key":"value","key2":"value2","nil":null}`,
@@ -348,13 +343,13 @@ func TestNode_MarshalJSONEdgeCases(t *testing.T) {
 		"nested map": {
 			node: govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"nested": {
+				Children: map[string][]*govdf.Node{
+					"nested": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"inner": {Type: govdf.NodeTypeScalar, Value: "value"},
+						Children: map[string][]*govdf.Node{
+							"inner": {{Type: govdf.NodeTypeScalar, Value: "value"}},
 						},
-					},
+					}},
 				},
 			},
 			expected: `{"nested":{"inner":"value"}}`,
@@ -362,18 +357,18 @@ func TestNode_MarshalJSONEdgeCases(t *testing.T) {
 		"deeply nested map": {
 			node: govdf.Node{
 				Type: govdf.NodeTypeMap,
-				Children: map[string]*govdf.Node{
-					"level1": {
+				Children: map[string][]*govdf.Node{
+					"level1": {{
 						Type: govdf.NodeTypeMap,
-						Children: map[string]*govdf.Node{
-							"level2": {
+						Children: map[string][]*govdf.Node{
+							"level2": {{
 								Type: govdf.NodeTypeMap,
-								Children: map[string]*govdf.Node{
-									"level3": {Type: govdf.NodeTypeScalar, Value: "deep value"},
+								Children: map[string][]*govdf.Node{
+									"level3": {{Type: govdf.NodeTypeScalar, Value: "deep value"}},
 								},
-							},
+							}},
 						},
-					},
+					}},
 				},
 			},
 			expected: `{"level1":{"level2":{"level3":"deep value"}}}`,
@@ -383,16 +378,13 @@ func TestNode_MarshalJSONEdgeCases(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			// Act: Marshal the node into JSON.
 			result, err := json.Marshal(tc.node)
 
-			// Assert: The node should match the expected node.
 			if name == "unknown node type" {
 				require.Error(t, err)
 				return
 			}
 
-			// Assert: The node should match the expected node.
 			require.NoError(t, err)
 			require.Equal(t, tc.expected, string(result))
 		})

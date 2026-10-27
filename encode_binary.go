@@ -105,27 +105,28 @@ func (e *BinaryEncoder) encodeObject(node *Node) error {
 
 	// Write each key-value pair
 	for _, key := range keys {
-		var child = node.Children[key]
-		if child == nil {
-			continue
-		}
-
-		switch child.Type {
-		case NodeTypeMap:
-			if err := e.writeObjectTag(key); err != nil {
-				return err
+		children := node.Children[key]
+		for _, child := range children {
+			if child == nil {
+				continue
 			}
-			if err := e.encodeObject(child); err != nil {
-				return err
-			}
+			switch child.Type {
+			case NodeTypeMap:
+				if err := e.writeObjectTag(key); err != nil {
+					return err
+				}
+				if err := e.encodeObject(child); err != nil {
+					return err
+				}
 
-		case NodeTypeScalar:
-			if err := e.writeScalar(key, child.Value); err != nil {
-				return err
-			}
+			case NodeTypeScalar:
+				if err := e.writeScalar(key, child.Value); err != nil {
+					return err
+				}
 
-		default:
-			return fmt.Errorf("unknown node type: %d", child.Type)
+			default:
+				return fmt.Errorf("unknown node type: %d", child.Type)
+			}
 		}
 	}
 

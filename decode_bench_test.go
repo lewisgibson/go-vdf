@@ -185,7 +185,7 @@ func BenchmarkUnmarshal_Parallel(b *testing.B) {
 }
 
 func BenchmarkUnmarshal_LargeNested(b *testing.B) {
-	// Create a large nested VDF structure
+
 	vdfData := strings.Join([]string{
 		`"level1" {`,
 		`	"level2a" {`,

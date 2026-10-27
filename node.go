@@ -45,7 +45,7 @@ type Node struct {
 
 	// Children contains the key-value mappings for NodeTypeMap nodes.
 	// This field is nil for NodeTypeScalar nodes.
-	Children map[string]*Node
+	Children map[string][]*Node
 
 	// HeadComment contains any comment that appears before this node.
 	// Comments are preserved during parsing and included in output.
@@ -61,13 +61,48 @@ type Node struct {
 	Column int
 }
 
+// appendChild records a child while retaining the historical last-value lookup.
+func appendChild(parent *Node, key string, child *Node) {
+	if parent.Children == nil {
+		parent.Children = make(map[string][]*Node)
+	}
+	parent.Children[key] = append(parent.Children[key], child)
+}
+
 // MarshalJSON returns the JSON encoding of the node.
 // Map nodes are encoded as JSON objects, scalar nodes as JSON strings.
 // This allows VDF nodes to be easily converted to JSON format.
 func (n Node) MarshalJSON() ([]byte, error) {
 	switch n.Type {
 	case NodeTypeMap:
-		return json.Marshal(n.Children)
+		if n.Children == nil {
+			return []byte("null"), nil
+		}
+		values := make(map[string]any, len(n.Children))
+		for key, children := range n.Children {
+			if len(children) == 0 {
+				values[key] = nil
+				continue
+			}
+			items := make([]any, 0, len(children))
+			for _, child := range children {
+				b, err := json.Marshal(child)
+				if err != nil {
+					return nil, err
+				}
+				var item any
+				if err := json.Unmarshal(b, &item); err != nil {
+					return nil, err
+				}
+				items = append(items, item)
+			}
+			if len(items) == 1 {
+				values[key] = items[0]
+			} else {
+				values[key] = items
+			}
+		}
+		return json.Marshal(values)
 
 	case NodeTypeScalar:
 		return json.Marshal(n.Value)
@@ -100,13 +135,13 @@ func (n *Node) UnmarshalJSON(data []byte) error {
 	return errors.New("cannot unmarshal JSON data into Node")
 }
 
-// convertMapToNodes converts a map[string]any to map[string]*Node.
+// convertMapToNodes converts a map[string]any to map[string][]*Node.
 // This is a helper function used during JSON unmarshaling to recursively
 // convert JSON objects into VDF node structures.
-func convertMapToNodes(m map[string]any) map[string]*Node {
-	var result = make(map[string]*Node)
+func convertMapToNodes(m map[string]any) map[string][]*Node {
+	var result = make(map[string][]*Node)
 	for k, v := range m {
-		result[k] = convertValueToNode(v)
+		result[k] = []*Node{convertValueToNode(v)}
 	}
 	return result
 }
